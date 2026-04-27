@@ -6,11 +6,17 @@ on:
     paths:
       - docs/feishu_push_test.md
 
+permissions:
+  contents: write
+
 jobs:
   test-feishu:
     runs-on: ubuntu-latest
     steps:
-      - name: Send Feishu test notification
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Send Feishu test notification and record result
         env:
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           REPO: ${{ github.repository }}
@@ -19,19 +25,38 @@ jobs:
           python - <<'PY'
           import json
           import os
+          import urllib.error
           import urllib.request
           from datetime import datetime
+          from pathlib import Path
           from zoneinfo import ZoneInfo
 
-          webhook = os.environ.get("FEISHU_WEBHOOK", "").strip()
-          if not webhook:
-              raise SystemExit("FEISHU_WEBHOOK is not set. Please add it in GitHub Actions secrets.")
+          result_path = Path("docs/feishu_test_result.md")
+          result_path.parent.mkdir(parents=True, exist_ok=True)
 
+          now = datetime.now(ZoneInfo("Asia/Taipei")).strftime("%Y-%m-%d %H:%M:%S")
           repo = os.environ.get("REPO", "JoyHuYY1412/GPT-")
           sha = os.environ.get("SHA", "")[:7]
-          now = datetime.now(ZoneInfo("Asia/Taipei")).strftime("%Y-%m-%d %H:%M:%S")
+          webhook = os.environ.get("FEISHU_WEBHOOK", "").strip()
+
+          status_lines = [
+              "# Feishu Test Result",
+              "",
+              f"- Time: {now} Asia/Taipei",
+              f"- Repo: {repo}",
+              f"- Commit: {sha}",
+              f"- FEISHU_WEBHOOK configured: {'yes' if webhook else 'no'}",
+          ]
+
+          if not webhook:
+              status_lines += ["", "## Result", "", "FAILED: `FEISHU_WEBHOOK` is empty or not available to this workflow."]
+              result_path.write_text("\n".join(status_lines) + "\n", encoding="utf-8")
+              raise SystemExit(0)
+
+          # Include likely keywords in case the Feishu bot enabled keyword verification.
           text = "\n".join([
-              "✅ 飞书推送测试成功",
+              "✅ Daily Briefs 飞书推送测试成功",
+              "关键词: Daily Briefs / GPT / 论文雷达",
               f"时间: {now} Asia/Taipei",
               f"Repo: https://github.com/{repo}",
               f"Commit: {sha}",
@@ -46,9 +71,40 @@ jobs:
               headers={"Content-Type": "application/json; charset=utf-8"},
               method="POST",
           )
-          with urllib.request.urlopen(req, timeout=20) as resp:
-              body = resp.read().decode("utf-8", errors="ignore")
-              print(body)
-              if '"StatusCode":0' not in body and '"code":0' not in body:
-                  raise SystemExit(f"Feishu webhook returned non-success response: {body}")
+
+          try:
+              with urllib.request.urlopen(req, timeout=20) as resp:
+                  body = resp.read().decode("utf-8", errors="ignore")
+                  http_status = resp.status
+          except urllib.error.HTTPError as e:
+              body = e.read().decode("utf-8", errors="ignore")
+              http_status = e.code
+          except Exception as e:
+              body = repr(e)
+              http_status = "exception"
+
+          status_lines += [
+              "",
+              "## Result",
+              "",
+              f"- HTTP status: `{http_status}`",
+              "- Raw response:",
+              "",
+              "```json",
+              body,
+              "```",
+          ]
+          result_path.write_text("\n".join(status_lines) + "\n", encoding="utf-8")
           PY
+
+      - name: Commit diagnostic result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/feishu_test_result.md
+          if git diff --cached --quiet; then
+            echo "No diagnostic changes to commit."
+          else
+            git commit -m "Record Feishu test result"
+            git push
+          fi

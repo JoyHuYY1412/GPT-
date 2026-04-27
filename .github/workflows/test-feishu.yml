@@ -1,0 +1,54 @@
+name: Test Feishu Notification
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - docs/feishu_push_test.md
+
+jobs:
+  test-feishu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Feishu test notification
+        env:
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+
+          webhook = os.environ.get("FEISHU_WEBHOOK", "").strip()
+          if not webhook:
+              raise SystemExit("FEISHU_WEBHOOK is not set. Please add it in GitHub Actions secrets.")
+
+          repo = os.environ.get("REPO", "JoyHuYY1412/GPT-")
+          sha = os.environ.get("SHA", "")[:7]
+          now = datetime.now(ZoneInfo("Asia/Taipei")).strftime("%Y-%m-%d %H:%M:%S")
+          text = "\n".join([
+              "✅ 飞书推送测试成功",
+              f"时间: {now} Asia/Taipei",
+              f"Repo: https://github.com/{repo}",
+              f"Commit: {sha}",
+              "",
+              "后续 Daily Briefs 会在每天生成 Markdown 后，把三份文件链接推送到这个飞书群。",
+          ])
+          payload = {"msg_type": "text", "content": {"text": text}}
+          data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+          req = urllib.request.Request(
+              webhook,
+              data=data,
+              headers={"Content-Type": "application/json; charset=utf-8"},
+              method="POST",
+          )
+          with urllib.request.urlopen(req, timeout=20) as resp:
+              body = resp.read().decode("utf-8", errors="ignore")
+              print(body)
+              if '"StatusCode":0' not in body and '"code":0' not in body:
+                  raise SystemExit(f"Feishu webhook returned non-success response: {body}")
+          PY

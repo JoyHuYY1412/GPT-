@@ -37,3 +37,53 @@ jobs:
             git commit -m "Add daily briefs for $(TZ=Asia/Taipei date +'%Y-%m-%d')"
             git push
           fi
+
+      - name: Send Feishu notification
+        if: always()
+        env:
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          REPO: ${{ github.repository }}
+          BRANCH: main
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+
+          webhook = os.environ.get("FEISHU_WEBHOOK", "").strip()
+          if not webhook:
+              print("FEISHU_WEBHOOK is not set. Skip Feishu notification.")
+              raise SystemExit(0)
+
+          repo = os.environ.get("REPO", "JoyHuYY1412/GPT-")
+          branch = os.environ.get("BRANCH", "main")
+          today = datetime.now(ZoneInfo("Asia/Taipei")).date().isoformat()
+          base = f"https://github.com/{repo}/blob/{branch}"
+          links = [
+              ("每日 arXiv 论文雷达", f"{base}/daily-briefs/paper-radar/{today}.md"),
+              ("学术圈地图", f"{base}/daily-briefs/academic-map/{today}.md"),
+              ("相关论文项目雷达", f"{base}/daily-briefs/related_paper-radar/{today}.md"),
+          ]
+          text = "\n".join([
+              f"📚 Daily Briefs 已更新｜{today}",
+              "",
+              *[f"- {name}: {url}" for name, url in links],
+              "",
+              "Repo: https://github.com/" + repo,
+          ])
+          payload = {
+              "msg_type": "text",
+              "content": {"text": text},
+          }
+          data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+          req = urllib.request.Request(
+              webhook,
+              data=data,
+              headers={"Content-Type": "application/json; charset=utf-8"},
+              method="POST",
+          )
+          with urllib.request.urlopen(req, timeout=20) as resp:
+              print(resp.read().decode("utf-8", errors="ignore"))
+          PY

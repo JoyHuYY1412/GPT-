@@ -1,10 +1,15 @@
 # Feishu Test Result
 
-- Time: 2026-04-28 02:16:39 Asia/Taipei
+- Time: 2026-04-28 02:20:43 Asia/Taipei
 - Repo: JoyHuYY1412/GPT-
-- Commit: d622971
-- FEISHU_WEBHOOK configured: no
+- Commit: 96eba14
+- FEISHU_WEBHOOK configured: yes
 
 ## Result
 
-FAILED: `FEISHU_WEBHOOK` is empty or not available to this workflow.
+- HTTP status: `200`
+- Raw response:
+
+```json
+{"StatusCode":0,"StatusMessage":"success","code":0,"data":{},"msg":"success"}
+```

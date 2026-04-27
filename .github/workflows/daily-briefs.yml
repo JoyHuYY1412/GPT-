@@ -72,6 +72,8 @@ jobs:
               *[f"- {name}: {url}" for name, url in links],
               "",
               "Repo: https://github.com/" + repo,
+              "",
+              "🔄 如果今天研究兴趣有变化，记得回到 GPT 里说：同步今天兴趣。没同步也没关系，系统会按历史兴趣继续推送。",
           ])
           payload = {
               "msg_type": "text",

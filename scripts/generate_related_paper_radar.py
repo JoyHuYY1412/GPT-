@@ -4,9 +4,9 @@
 Output:
 - daily-briefs/related_paper-radar/YYYY-MM-DD.md
 
-This stream is for 2018-2026 top-conference/top-journal or influential project
-papers related to the user's evolving research context. It targets about 8 items
-and avoids titles that appeared in the recent 7 days.
+Target: about 8 items. Avoid titles already appearing in the recent 7 days.
+This is not the hot arXiv stream; it is a related-work stream for building a
+research map around multimodal/video/world-model/agent interests.
 """
 
 from __future__ import annotations
@@ -37,176 +37,19 @@ WATCH_TERMS = [
 ]
 
 PAPER_POOL = [
-    {
-        "title": "World Models",
-        "year": "2018",
-        "venue": "influential world-model line",
-        "link": "https://arxiv.org/abs/1803.10122",
-        "project": "https://worldmodels.github.io/",
-        "tags": ["world model", "memory", "agent", "latent dynamics"],
-        "why": "把环境动态压缩为可预测 latent dynamics，是后续 video/world model 和 agent memory 讨论的重要起点。",
-        "angle": "可作为梳理 world model memory 机制时的历史根节点。",
-    },
-    {
-        "title": "VideoGPT: Video Generation using VQ-VAE and Transformers",
-        "year": "2021",
-        "venue": "autoregressive video generation",
-        "link": "https://arxiv.org/abs/2104.10157",
-        "project": "https://wilson1yan.github.io/videogpt/index.html",
-        "tags": ["video generation", "visual tokenization", "autoregressive"],
-        "why": "早期把离散视觉 token 与 transformer 视频生成结合起来，对视觉 tokenizer 和 AR video generation 有启发。",
-        "angle": "适合和 JPEG-LM、xAR、UniTok、FlexTok 等视觉 tokenization 工作放在一起比较。",
-    },
-    {
-        "title": "Perceiver IO: A General Architecture for Structured Inputs & Outputs",
-        "year": "2021",
-        "venue": "ICLR 2022",
-        "link": "https://arxiv.org/abs/2107.14795",
-        "project": "https://deepmind.google/discover/blog/building-architectures-that-can-handle-the-worlds-data/",
-        "tags": ["multimodal", "long context", "latent bottleneck", "efficient perception"],
-        "why": "通过 latent bottleneck 处理多模态长输入，是多模态压缩和统一输入输出架构的经典参考。",
-        "angle": "可连接多模态压缩、long-context perception 和 efficient multimodal learning。",
-    },
-    {
-        "title": "Flamingo: a Visual Language Model for Few-Shot Learning",
-        "year": "2022",
-        "venue": "NeurIPS 2022",
-        "link": "https://arxiv.org/abs/2204.14198",
-        "project": "https://www.deepmind.com/blog/tackling-multiple-tasks-with-a-single-visual-language-model",
-        "tags": ["multimodal", "in-context learning", "vision language model"],
-        "why": "将 frozen language model、visual resampler 和 cross-attention 结合，是多模态 in-context learning 的代表性系统。",
-        "angle": "可作为 LIVE/MimIC 一类轻量 context learning 方法的背景参照。",
-    },
-    {
-        "title": "Segment Anything",
-        "year": "2023",
-        "venue": "ICCV 2023",
-        "link": "https://arxiv.org/abs/2304.02643",
-        "project": "https://segment-anything.com/",
-        "tags": ["segmentation", "mask", "foundation model", "promptable perception"],
-        "why": "promptable segmentation 和大规模数据引擎改变了视觉基础模型和标注范式。",
-        "angle": "可与 MTA-CLIP、mask-text alignment、text-enhanced segmentation 等方向连接。",
-    },
-    {
-        "title": "LLaVA: Large Language and Vision Assistant",
-        "year": "2023",
-        "venue": "NeurIPS 2023 workshop / influential LMM project",
-        "link": "https://arxiv.org/abs/2304.08485",
-        "project": "https://llava-vl.github.io/",
-        "tags": ["multimodal", "LMM", "instruction tuning", "visual reasoning"],
-        "why": "用 instruction tuning 把视觉编码器接入 LLM，推动了 open-source LMM 生态。",
-        "angle": "适合作为多模态 agent、evaluation、visual instruction tuning 的基线脉络。",
-    },
-    {
-        "title": "VideoPoet: A Large Language Model for Zero-Shot Video Generation",
-        "year": "2023/2024",
-        "venue": "ICML 2024",
-        "link": "https://arxiv.org/abs/2312.14125",
-        "project": "https://sites.research.google/videopoet/",
-        "tags": ["video generation", "autoregressive", "visual tokenization", "multimodal generation"],
-        "why": "把视频生成表述为语言模型式 token prediction，连接了 AR modeling、多模态 tokenization 和视频生成。",
-        "angle": "适合和 VideoFlexTok、JPEG-LM、visual codec representation 方向一起讨论。",
-    },
-    {
-        "title": "Sora: Creating video from text",
-        "year": "2024",
-        "venue": "technical report",
-        "link": "https://openai.com/research/video-generation-models-as-world-simulators",
-        "project": "https://openai.com/sora",
-        "tags": ["video generation", "world simulator", "evaluation", "long video"],
-        "why": "强化了 video generation as world simulator 的叙事，推动视频生成从短片合成走向世界建模讨论。",
-        "angle": "可用于 video generation 与 video evaluation 并行发展的 framing。",
-    },
-    {
-        "title": "Movie Gen: A Cast of Media Foundation Models",
-        "year": "2024",
-        "venue": "technical report",
-        "link": "https://arxiv.org/abs/2410.13720",
-        "project": "https://ai.meta.com/research/movie-gen/",
-        "tags": ["video generation", "personalized generation", "video editing", "media foundation model"],
-        "why": "系统展示 text-to-video、personalized video、audio generation 和 editing 的统一媒体生成能力。",
-        "angle": "贴近 personalized generation、video editing 和商业短视频创作 agent。",
-    },
-    {
-        "title": "Genie: Generative Interactive Environments",
-        "year": "2024",
-        "venue": "ICML 2024",
-        "link": "https://arxiv.org/abs/2402.15391",
-        "project": "https://sites.google.com/view/genie-2024/",
-        "tags": ["world model", "interactive environment", "video generation", "agent"],
-        "why": "从无标注视频中学习可交互环境，连接视频生成、world model 和 action-conditioned simulation。",
-        "angle": "可与 Matrix-Game、AIM、VAG 等 video-action/world-action model 工作串联。",
-    },
-    {
-        "title": "GAIA: a Benchmark for General AI Assistants",
-        "year": "2023/2024",
-        "venue": "ICLR 2024",
-        "link": "https://arxiv.org/abs/2311.12983",
-        "project": "https://huggingface.co/gaia-benchmark",
-        "tags": ["agent", "tool use", "benchmark", "evaluation"],
-        "why": "关注通用 AI assistant 在工具使用、搜索、推理和多步骤任务中的能力。",
-        "angle": "可作为多模态 agent、记忆迁移平台和工具调用系统的评估参考。",
-    },
-    {
-        "title": "Visual Program Distillation",
-        "year": "2023",
-        "venue": "CVPR 2023",
-        "link": "https://arxiv.org/abs/2212.03052",
-        "project": "https://prior.allenai.org/projects/visprog",
-        "tags": ["visual reasoning", "tool use", "program", "agent"],
-        "why": "把视觉任务拆成可解释程序和工具调用，是 agentic visual reasoning 的早期重要路线。",
-        "angle": "可连接验证反馈、多工具视频创作 agent 和显式中间结构。",
-    },
-    {
-        "title": "DreamerV3: Mastering Diverse Domains through World Models",
-        "year": "2023",
-        "venue": "arXiv / influential world model RL",
-        "link": "https://arxiv.org/abs/2301.04104",
-        "project": "https://danijar.com/project/dreamerv3/",
-        "tags": ["world model", "RL", "planning", "agent"],
-        "why": "展示了 world model 在多域 RL 中的通用性，是理解模型式 RL 与 agent 规划的重要节点。",
-        "angle": "可用于连接 video/world model 与可执行 agent policy。",
-    },
-    {
-        "title": "RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control",
-        "year": "2023",
-        "venue": "CoRL 2023 / robotics foundation model",
-        "link": "https://arxiv.org/abs/2307.15818",
-        "project": "https://robotics-transformer2.github.io/",
-        "tags": ["VLA", "robot", "embodied", "vision language action"],
-        "why": "把视觉语言模型扩展为 action-generating model，是 VLA 路线的代表工作。",
-        "angle": "可作为 embodied multimodal agent 和 action grounding 的 related work。",
-    },
-    {
-        "title": "Ego4D: Around the World in 3,000 Hours of Egocentric Video",
-        "year": "2022",
-        "venue": "CVPR 2022",
-        "link": "https://arxiv.org/abs/2110.07058",
-        "project": "https://ego4d-data.org/",
-        "tags": ["egocentric video", "long video", "benchmark", "video understanding"],
-        "why": "大规模第一人称视频数据集，推动长视频、记忆、交互和日常行为理解。",
-        "angle": "适合作为 long-video agent perception 和 embodied understanding 的数据基础。",
-    },
-    {
-        "title": "Video-LLaMA: An Instruction-tuned Audio-Visual Language Model for Video Understanding",
-        "year": "2023",
-        "venue": "EMNLP 2023 Demo / video LMM",
-        "link": "https://arxiv.org/abs/2306.02858",
-        "project": "https://github.com/DAMO-NLP-SG/Video-LLaMA",
-        "tags": ["video understanding", "multimodal", "LMM", "instruction tuning"],
-        "why": "早期 video instruction-tuned LMM 之一，连接 LLaVA 风格图像 LMM 与视频理解。",
-        "angle": "可用于梳理 video-LMM 从短视频问答到长视频推理的发展线。",
-    },
-    {
-        "title": "RoboCat: A Self-Improving Robotic Agent",
-        "year": "2023",
-        "venue": "technical report / robotics agent",
-        "link": "https://arxiv.org/abs/2306.11706",
-        "project": "https://www.deepmind.com/blog/robocat-a-self-improving-robotic-agent",
-        "tags": ["robot", "agent", "self-improving", "embodied"],
-        "why": "强调机器人 agent 通过数据闭环和自我改进扩展任务能力。",
-        "angle": "可连接 agentic RL、反馈闭环和具身数据生成。",
-    },
+    {"title":"GAIA: a Benchmark for General AI Assistants","year":"2023/2024","venue":"ICLR 2024","link":"https://arxiv.org/abs/2311.12983","project":"https://huggingface.co/gaia-benchmark","tags":["agent","tool use","benchmark","evaluation"],"why":"GAIA 将 agent 能力放到搜索、工具使用、多步骤推理和真实任务完成中评估，比普通 QA 更接近 agentic workflow。","angle":"适合作为多模态 agent、短视频创作 agent、记忆迁移系统的端到端评估参考。"},
+    {"title":"Visual Program Distillation: Distilling Tools and Programmatic Reasoning into Vision-Language Models","year":"2023","venue":"CVPR 2023","link":"https://arxiv.org/abs/2212.03052","project":"https://prior.allenai.org/projects/visprog","tags":["visual reasoning","program","tool use","agent"],"why":"它把视觉推理任务拆成程序化工具调用，是 agentic visual reasoning 的重要早期路线。","angle":"可迁移到视频生成 agent 的脚本规划、素材检索、局部生成和验证反馈链路。"},
+    {"title":"PaLM-E: An Embodied Multimodal Language Model","year":"2023","venue":"ICML 2023","link":"https://arxiv.org/abs/2303.03378","project":"https://palm-e.github.io/","tags":["embodied","multimodal","robot","language model"],"why":"PaLM-E 把多模态感知、语言模型和具身控制连接起来，是 embodied multimodal model 的代表节点。","angle":"适合对比 LMM、VLA、world model 三条路线如何连接感知、语言和行动。"},
+    {"title":"VIMA: General Robot Manipulation with Multimodal Prompts","year":"2022/2023","venue":"ICML 2023","link":"https://arxiv.org/abs/2210.03094","project":"https://vimalabs.github.io/","tags":["robot","multimodal prompt","manipulation","generalist policy"],"why":"VIMA 将多模态 prompt 引入机器人操作任务，强调任务描述、视觉目标和动作执行之间的统一接口。","angle":"可作为 promptable embodied policy 和多模态任务条件化的 related work。"},
+    {"title":"RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control","year":"2023","venue":"CoRL 2023 / robotics foundation model","link":"https://arxiv.org/abs/2307.15818","project":"https://robotics-transformer2.github.io/","tags":["VLA","robot","web knowledge","action"],"why":"RT-2 把 web-scale VLM 知识迁移到机器人动作输出，推动了 vision-language-action model 的主流叙事。","angle":"适合和 HY-Embodied、Open X-Embodiment、world-action model 放在一条谱系里。"},
+    {"title":"Do As I Can, Not As I Say: Grounding Language in Robotic Affordances","year":"2022","venue":"CoRL 2022","link":"https://arxiv.org/abs/2204.01691","project":"https://say-can.github.io/","tags":["robot","affordance","planning","language grounding"],"why":"SayCan 将语言模型规划与 affordance/value function 结合，解决会说但不能做的具身落地问题。","angle":"可作为 agentic planning 中语言计划和可执行动作约束结合的经典 related work。"},
+    {"title":"Ego4D: Around the World in 3,000 Hours of Egocentric Video","year":"2022","venue":"CVPR 2022","link":"https://arxiv.org/abs/2110.07058","project":"https://ego4d-data.org/","tags":["egocentric video","long video","benchmark","dataset"],"why":"Ego4D 提供大规模第一人称长视频数据和任务设置，是长视频理解、具身感知和日常活动建模的重要数据节点。","angle":"适合作为 long-video reasoning、agent perception、memory benchmark 的背景数据工作。"},
+    {"title":"DreamerV3: Mastering Diverse Domains through World Models","year":"2023/2025","venue":"Nature 2025 / world model RL line","link":"https://arxiv.org/abs/2301.04104","project":"https://danijar.com/project/dreamerv3/","tags":["world model","RL","planning","latent dynamics"],"why":"DreamerV3 展示了 latent world model 在多任务 RL 中的通用性，是理解 world model 与 policy learning 结合的重要节点。","angle":"适合对比 video world model 与 latent dynamics world model 的差别。"},
+    {"title":"RT-1: Robotics Transformer for Real-World Control at Scale","year":"2022","venue":"robotics foundation model line","link":"https://arxiv.org/abs/2212.06817","project":"https://robotics-transformer.github.io/","tags":["robot","transformer","real-world control","scale"],"why":"RT-1 将 transformer policy 和大规模真实机器人数据结合，是 VLA/robot foundation model 的前置节点。","angle":"可用于梳理从 language-conditioned policy 到 web-knowledge VLA 的发展。"},
+    {"title":"Flamingo: a Visual Language Model for Few-Shot Learning","year":"2022","venue":"NeurIPS 2022","link":"https://arxiv.org/abs/2204.14198","project":"https://www.deepmind.com/blog/tackling-multiple-tasks-with-a-single-visual-language-model","tags":["multimodal","in-context learning","vision-language"],"why":"Flamingo 是多模态 in-context learning 和 frozen LM + visual resampler 架构的重要代表。","angle":"适合和 LIVE/MimIC 这类轻量多模态 context learning 方法形成背景对照。"},
+    {"title":"Perceiver IO: A General Architecture for Structured Inputs & Outputs","year":"2021/2022","venue":"ICLR 2022","link":"https://arxiv.org/abs/2107.14795","project":"https://deepmind.google/discover/blog/building-architectures-that-can-handle-the-worlds-data/","tags":["multimodal","latent bottleneck","long context","architecture"],"why":"Perceiver IO 用 latent bottleneck 统一处理结构化输入输出，是多模态压缩和可扩展感知架构的重要参考。","angle":"适合连接 efficient multimodal learning、long-context perception 和统一输入输出空间。"},
+    {"title":"Movie Gen: A Cast of Media Foundation Models","year":"2024","venue":"Meta AI technical report","link":"https://arxiv.org/abs/2410.13720","project":"https://ai.meta.com/research/movie-gen/","tags":["video generation","personalized generation","video editing","media foundation model"],"why":"Movie Gen 系统性展示了视频、音频、个性化和编辑能力的统一媒体生成路线。","angle":"适合连接 personalized video、video editing 和短视频创作 agent。"},
+    {"title":"Open X-Embodiment: Robotic Learning Datasets and RT-X Models","year":"2023/2024","venue":"ICRA 2024 / robotics data scaling line","link":"https://arxiv.org/abs/2310.08864","project":"https://robotics-transformer-x.github.io/","tags":["robot","dataset","scaling","cross-embodiment"],"why":"Open X-Embodiment 强调跨机器人、跨任务数据汇聚，是 embodied foundation model 的数据基础设施节点。","angle":"适合比较多模态数据融合、跨域泛化和具身大模型训练范式。"},
 ]
 
 
@@ -219,11 +62,9 @@ def normalize_title(title: str) -> str:
 def extract_titles_from_md(text: str) -> set[str]:
     titles: set[str] = set()
     for line in text.splitlines():
-        line = line.strip()
-        m = re.match(r"^##\s+\d+\.\s+(.+)$", line)
+        m = re.match(r"^##\s+\d+\.\s+(.+?)(?:\s+\([^)]*\))?$", line.strip())
         if m:
-            raw = re.sub(r"\s+\([^)]*\)\s*$", "", m.group(1)).strip()
-            titles.add(normalize_title(raw))
+            titles.add(normalize_title(m.group(1)))
     return titles
 
 
@@ -237,31 +78,28 @@ def recent_titles() -> set[str]:
     return titles
 
 
-def read_context_terms() -> list[str]:
-    text_parts = []
+def context_terms() -> list[str]:
+    texts = []
     for dirname in CONTEXT_DIRS:
         root = ROOT / dirname
         if root.exists():
             files = [p for p in root.rglob("*") if p.is_file() and p.suffix.lower() in CONTEXT_EXTS]
             files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
             for p in files[:10]:
-                text_parts.append(p.read_text(encoding="utf-8", errors="ignore")[:4000])
-    lower = "\n".join(text_parts).lower()
-    terms = [t for t in WATCH_TERMS if t.lower() in lower]
-    return terms[:20]
+                texts.append(p.read_text(encoding="utf-8", errors="ignore")[:4000])
+    lower = "\n".join(texts).lower()
+    return [t for t in WATCH_TERMS if t.lower() in lower][:20]
 
 
 def select_items() -> tuple[list[dict], list[str]]:
-    terms = read_context_terms()
+    terms = context_terms()
     banned = recent_titles()
     scored = []
     for i, item in enumerate(PAPER_POOL):
-        norm = normalize_title(item["title"])
-        if norm in banned:
+        if normalize_title(item["title"]) in banned:
             continue
         haystack = " ".join([item["title"], item["why"], item["angle"], " ".join(item.get("tags", []))]).lower()
-        score = sum(2 for t in terms if t.lower() in haystack) + sum(1 for tag in item.get("tags", []) if tag.lower() in haystack)
-        # deterministic rotation tie-breaker
+        score = sum(2 for t in terms if t.lower() in haystack) + len(item.get("tags", []))
         rotate = -((TODAY.toordinal() + i) % len(PAPER_POOL))
         scored.append((score, rotate, item))
     scored.sort(reverse=True, key=lambda x: (x[0], x[1]))

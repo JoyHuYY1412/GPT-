@@ -2,8 +2,11 @@ name: Daily Briefs
 
 on:
   schedule:
-    # 01:30 Asia/Taipei = 17:30 UTC on the previous day
+    # 01:30, 01:45, and 02:00 Asia/Taipei = 17:30, 17:45, and 18:00 UTC on the previous day.
+    # Multiple slots make the job more robust to transient failures or scheduler delays.
     - cron: "30 17 * * *"
+    - cron: "45 17 * * *"
+    - cron: "0 18 * * *"
   workflow_dispatch:
 
 permissions:
@@ -21,14 +24,72 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Generate daily Markdown briefs
-        run: |
-          python scripts/generate_daily_briefs.py
-          python scripts/generate_paper_archaeology.py
+      - name: Generate paper, related paper, and academic map briefs
+        id: gen_daily
+        continue-on-error: true
+        run: python scripts/generate_daily_briefs.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Commit generated briefs
+      - name: Generate paper archaeology brief
+        id: gen_archaeology
+        continue-on-error: true
+        run: python scripts/generate_paper_archaeology.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Write workflow status
+        if: always()
+        env:
+          GEN_DAILY_OUTCOME: ${{ steps.gen_daily.outcome }}
+          GEN_ARCHAEOLOGY_OUTCOME: ${{ steps.gen_archaeology.outcome }}
+          GEN_DAILY_CONCLUSION: ${{ steps.gen_daily.conclusion }}
+          GEN_ARCHAEOLOGY_CONCLUSION: ${{ steps.gen_archaeology.conclusion }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import os
+          from datetime import datetime
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+
+          today = datetime.now(ZoneInfo("Asia/Taipei")).date().isoformat()
+          now = datetime.now(ZoneInfo("Asia/Taipei")).strftime("%Y-%m-%d %H:%M:%S")
+          status_dir = Path("daily-briefs/_status")
+          status_dir.mkdir(parents=True, exist_ok=True)
+          expected = [
+              f"daily-briefs/paper-radar/{today}.md",
+              f"daily-briefs/academic-map/{today}.md",
+              f"daily-briefs/related_paper-radar/{today}.md",
+              f"daily-briefs/paper-archaeology/{today}.md",
+          ]
+          lines = [
+              f"# Daily Briefs Workflow Status｜{today}",
+              "",
+              f"- Time: {now} Asia/Taipei",
+              f"- Workflow: {os.environ.get('GITHUB_WORKFLOW', '')}",
+              f"- Run ID: {os.environ.get('GITHUB_RUN_ID', '')}",
+              f"- Run attempt: {os.environ.get('GITHUB_RUN_ATTEMPT', '')}",
+              f"- Commit: {os.environ.get('GITHUB_SHA', '')}",
+              f"- generate_daily_briefs outcome: {os.environ.get('GEN_DAILY_OUTCOME', '')}",
+              f"- generate_daily_briefs conclusion: {os.environ.get('GEN_DAILY_CONCLUSION', '')}",
+              f"- generate_paper_archaeology outcome: {os.environ.get('GEN_ARCHAEOLOGY_OUTCOME', '')}",
+              f"- generate_paper_archaeology conclusion: {os.environ.get('GEN_ARCHAEOLOGY_CONCLUSION', '')}",
+              "",
+              "## Expected files",
+              "",
+          ]
+          for p in expected:
+              lines.append(f"- {'✅' if Path(p).exists() else '❌'} `{p}`")
+          status_file = status_dir / f"{today}.md"
+          status_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+
+      - name: Commit generated briefs and status
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -46,6 +107,8 @@ jobs:
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           REPO: ${{ github.repository }}
           BRANCH: main
+          GEN_DAILY_OUTCOME: ${{ steps.gen_daily.outcome }}
+          GEN_ARCHAEOLOGY_OUTCOME: ${{ steps.gen_archaeology.outcome }}
         run: |
           python - <<'PY'
           import json
@@ -68,9 +131,11 @@ jobs:
               ("学术圈地图", f"{base}/daily-briefs/academic-map/{today}.md"),
               ("相关论文项目雷达", f"{base}/daily-briefs/related_paper-radar/{today}.md"),
               ("考古论文雷达", f"{base}/daily-briefs/paper-archaeology/{today}.md"),
+              ("运行状态", f"{base}/daily-briefs/_status/{today}.md"),
           ]
           text = "\n".join([
               f"📚 Daily Briefs 已更新｜{today}",
+              f"状态：daily={os.environ.get('GEN_DAILY_OUTCOME', '')}, archaeology={os.environ.get('GEN_ARCHAEOLOGY_OUTCOME', '')}",
               "",
               *[f"- {name}: {url}" for name, url in links],
               "",
@@ -78,10 +143,7 @@ jobs:
               "",
               "🔄 如果今天研究兴趣有变化，记得回到 GPT 里说：同步今天兴趣。没同步也没关系，系统会按历史兴趣继续推送。",
           ])
-          payload = {
-              "msg_type": "text",
-              "content": {"text": text},
-          }
+          payload = {"msg_type": "text", "content": {"text": text}}
           data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
           req = urllib.request.Request(
               webhook,

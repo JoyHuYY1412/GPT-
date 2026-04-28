@@ -24,10 +24,24 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Generate paper, related paper, and academic map briefs
+      - name: Generate base daily briefs
         id: gen_daily
         continue-on-error: true
         run: python scripts/generate_daily_briefs.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate deduplicated paper radar
+        id: gen_paper_radar
+        continue-on-error: true
+        run: python scripts/generate_paper_radar.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate deduplicated related paper radar
+        id: gen_related_radar
+        continue-on-error: true
+        run: python scripts/generate_related_paper_radar.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -42,8 +56,12 @@ jobs:
         if: always()
         env:
           GEN_DAILY_OUTCOME: ${{ steps.gen_daily.outcome }}
+          GEN_PAPER_RADAR_OUTCOME: ${{ steps.gen_paper_radar.outcome }}
+          GEN_RELATED_RADAR_OUTCOME: ${{ steps.gen_related_radar.outcome }}
           GEN_ARCHAEOLOGY_OUTCOME: ${{ steps.gen_archaeology.outcome }}
           GEN_DAILY_CONCLUSION: ${{ steps.gen_daily.conclusion }}
+          GEN_PAPER_RADAR_CONCLUSION: ${{ steps.gen_paper_radar.conclusion }}
+          GEN_RELATED_RADAR_CONCLUSION: ${{ steps.gen_related_radar.conclusion }}
           GEN_ARCHAEOLOGY_CONCLUSION: ${{ steps.gen_archaeology.conclusion }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
@@ -76,6 +94,10 @@ jobs:
               f"- Commit: {os.environ.get('GITHUB_SHA', '')}",
               f"- generate_daily_briefs outcome: {os.environ.get('GEN_DAILY_OUTCOME', '')}",
               f"- generate_daily_briefs conclusion: {os.environ.get('GEN_DAILY_CONCLUSION', '')}",
+              f"- generate_paper_radar outcome: {os.environ.get('GEN_PAPER_RADAR_OUTCOME', '')}",
+              f"- generate_paper_radar conclusion: {os.environ.get('GEN_PAPER_RADAR_CONCLUSION', '')}",
+              f"- generate_related_paper_radar outcome: {os.environ.get('GEN_RELATED_RADAR_OUTCOME', '')}",
+              f"- generate_related_paper_radar conclusion: {os.environ.get('GEN_RELATED_RADAR_CONCLUSION', '')}",
               f"- generate_paper_archaeology outcome: {os.environ.get('GEN_ARCHAEOLOGY_OUTCOME', '')}",
               f"- generate_paper_archaeology conclusion: {os.environ.get('GEN_ARCHAEOLOGY_CONCLUSION', '')}",
               "",
@@ -108,6 +130,8 @@ jobs:
           REPO: ${{ github.repository }}
           BRANCH: main
           GEN_DAILY_OUTCOME: ${{ steps.gen_daily.outcome }}
+          GEN_PAPER_RADAR_OUTCOME: ${{ steps.gen_paper_radar.outcome }}
+          GEN_RELATED_RADAR_OUTCOME: ${{ steps.gen_related_radar.outcome }}
           GEN_ARCHAEOLOGY_OUTCOME: ${{ steps.gen_archaeology.outcome }}
         run: |
           python - <<'PY'
@@ -135,7 +159,7 @@ jobs:
           ]
           text = "\n".join([
               f"📚 Daily Briefs 已更新｜{today}",
-              f"状态：daily={os.environ.get('GEN_DAILY_OUTCOME', '')}, archaeology={os.environ.get('GEN_ARCHAEOLOGY_OUTCOME', '')}",
+              f"状态：base={os.environ.get('GEN_DAILY_OUTCOME', '')}, paper={os.environ.get('GEN_PAPER_RADAR_OUTCOME', '')}, related={os.environ.get('GEN_RELATED_RADAR_OUTCOME', '')}, archaeology={os.environ.get('GEN_ARCHAEOLOGY_OUTCOME', '')}",
               "",
               *[f"- {name}: {url}" for name, url in links],
               "",

@@ -22,6 +22,7 @@ Research Pulse 是一个本地优先的科研信息推送网站，用来把 arXi
   - DeepSeek 即时问答，或复制上下文到 GPT。
   - Markdown 笔记草稿、保存、相关笔记检索、飞书消息提醒。
 - 收藏流：只滚动收藏条目，快速回顾近期看过的 paper。
+- 大牛 follow：按机构展板关注学者，每月排一次 Agent 更新 Google Scholar / 主页 / publications；红点提示本月新 paper，年均引用量大于 100 的论文用星标标出。
 - 本地知识源：读取 `wiki/`、`papers/`、`notes/` 路径，配合 QMem 聊天记录做相关笔记。
 
 ## 目录结构
@@ -195,6 +196,31 @@ python agent_daily.py --input agent_outputs/YYYY-MM-DD.json --notify
 ```bash
 python agent_daily.py --fallback --notify
 ```
+
+## 大牛 follow
+
+页面入口在左侧导航的“大牛 follow”。默认关注了：
+
+- Fei-Fei Li：Stanford，Google Scholar 已配置。
+- Jiajun Wu：Stanford，Google Scholar 已配置。
+- Bernt Schiele：MPI / Saarland，Google Scholar 已配置。
+- Dima Damen：Bristol / Google DeepMind，主页与 publications 已配置；Google Scholar ID 暂未硬写，避免误连到错误 profile。
+
+使用方式：
+
+- 展板按机构分组显示作者。
+- 红点表示本月有新 paper 或需要重点关注。
+- 点击作者进入抽屉，按时间从新到旧看近期论文、科研生平和近期兴趣。
+- 高引论文使用 `★ 年均引用 > 100` 标记。
+- “提交月度更新”会写入一个 `bigshot_monthly_update` Agent 任务；同一个月份重复点击会复用已有任务，不会堆重复队列。
+
+月度 Agent 更新时建议补充这些字段：
+
+- Google Scholar 总引用量。
+- 本月是否有新 paper。
+- 最近论文列表，按年份从新到旧。
+- 高引论文是否满足平均年引用量大于 100。
+- 作者早期方向、代表性 title、近期 focus。
 
 ## Agent 输出 JSON 约定
 

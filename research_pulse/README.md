@@ -191,6 +191,13 @@ python update_arxiv_daily.py --limit 10 --replace-demo
 python agent_daily.py --input agent_outputs/YYYY-MM-DD.json --notify
 ```
 
+生成给定时 Agent 使用的标准 prompt：
+
+```bash
+python agent_daily.py --print-prompt
+python agent_daily.py --write-prompt
+```
+
 没有真实 Agent 输出时，不建议用 fallback 生成假卡片；fallback 只用于验证流程：
 
 ```bash
@@ -261,6 +268,8 @@ python agent_daily.py --fallback --notify
 ```
 
 分数统一使用 0-10。导入器会自动去重：优先按链接，其次按标题和作者。
+
+导入器还会做质量门槛检查：没有真实来源链接、摘要过短、缺少中文摘要、缺少核心贡献/主要框架、或只有空泛标签的条目不会写入数据库。
 
 ## GitHub 同步
 

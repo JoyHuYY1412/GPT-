@@ -453,7 +453,7 @@ async function init() {
     state.user = data.user;
     state.settings = data.settings;
     if (state.user) {
-      await Promise.all([loadFeed(), loadShareUsers()]);
+      await Promise.all([loadFeed(), loadShareUsers(), loadBigshots()]);
       if (state.user.role === "admin") {
         const usersData = await api("/api/admin/users");
         state.adminUsers = usersData.users;
@@ -490,6 +490,7 @@ async function navigate(view) {
   setMessage("");
   try {
     if (view === "today") await loadFeed();
+    if (view === "today" && !state.bigshots.people?.length) await loadBigshots();
     if (view === "archive") {
       const dates = await api("/api/dates");
       state.dates = dates.dates;
@@ -764,6 +765,7 @@ function renderToday() {
   return `
     ${renderStats()}
     ${renderRail(favorites, "收藏流", "")}
+    ${renderBigshotPreview()}
     ${Object.keys(kindMeta).map((kind) => renderSection(kindMeta[kind].title, kindMeta[kind].hint, groups[kind], kind)).join("")}
   `;
 }
@@ -952,8 +954,71 @@ function groupBigshots() {
 }
 
 function institutionMark(name) {
-  const letters = String(name || "AI").split(/\s+|\/|-/).filter(Boolean).map((part) => part[0]).join("").slice(0, 4).toUpperCase();
-  return letters || "AI";
+  const aliases = {
+    "Stanford University": "Stanford",
+    "Massachusetts Institute of Technology": "MIT",
+    "University of California, Berkeley": "Berkeley",
+    "University of Washington": "UW",
+    "University of Washington / NVIDIA": "UW × NVIDIA",
+    "Max Planck Institute / Saarland University": "MPI × Saarland",
+    "California Institute of Technology": "Caltech",
+    "Carnegie Mellon University": "CMU",
+    "Google DeepMind": "DeepMind",
+  };
+  return aliases[name] || name || "未分组机构";
+}
+
+function bigshotInstitutionSummary(people) {
+  const tags = [...new Set(people.flatMap((person) => person.payload?.interests || []).filter(Boolean))].slice(0, 4);
+  return tags.join(" / ");
+}
+
+function renderBigshotPreview() {
+  const people = (state.bigshots.people || []).slice(0, 10);
+  if (!people.length) return "";
+  return `
+    <section class="section bigshot-preview">
+      <div class="panel-head">
+        <div>
+          <h3>大牛 follow</h3>
+          <div class="muted">按学校和研究机构跟踪 Scholar 新论文、近期兴趣和高引代表作</div>
+        </div>
+        <button class="secondary" data-action="nav" data-view="bigshots">${icon("network")}查看展板</button>
+      </div>
+      <div class="bigshot-strip">
+        ${people.map(renderBigshotChip).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderBigshotChip(person) {
+  const tags = Array.isArray(person.payload?.interests) ? person.payload.interests.slice(0, 2) : [];
+  return `
+    <button class="bigshot-chip" data-action="open-bigshot" data-id="${h(person.id)}">
+      <span class="chip-name">${h(person.display_name || person.name)}</span>
+      ${person.has_new_this_month ? `<span class="new-dot small" title="本月有新 paper"></span>` : ""}
+      <span class="chip-org">${h(institutionMark(person.institution_group || person.institution))}</span>
+      <span class="chip-tags">${tags.map(h).join(" · ")}</span>
+    </button>
+  `;
+}
+
+function renderInstitutionBoard(group, people) {
+  const collapsed = Boolean(state.collapsedSections[`bigshot:${group}`]);
+  return `
+    <section class="section institution-board ${collapsed ? "collapsed" : ""}">
+      <div class="institution-head">
+        <div>
+          <div class="institution-kicker">Institution Board</div>
+          <h3>${h(institutionMark(group))}</h3>
+          <p>${people.length} 位关注作者${bigshotInstitutionSummary(people) ? ` · ${h(bigshotInstitutionSummary(people))}` : ""}</p>
+        </div>
+        <button class="secondary compact-btn" data-action="toggle-section" data-section="${h(`bigshot:${group}`)}">${collapsed ? "展开" : "收起"}</button>
+      </div>
+      ${collapsed ? "" : `<div class="bigshot-grid">${people.map(renderBigshotCard).join("")}</div>`}
+    </section>
+  `;
 }
 
 function renderBigshots() {
@@ -964,48 +1029,34 @@ function renderBigshots() {
       <section class="section bigshot-hero">
         <div>
           <h3>大牛 follow</h3>
-          <p>每月同步一次 Google Scholar / 主页 / publications，红点表示本月有新 paper，高引论文用星标标出。</p>
+          <p>按学校和研究机构长期跟踪核心作者：每月同步 Google Scholar / 主页 / publications，红点提示本月新 paper，高引代表作用星标标出。</p>
         </div>
         <div class="inline-row">
           <span class="pill">本月 ${h(state.bigshots.month || "")}</span>
           <span class="pill">${total} 位关注作者</span>
-          <button class="primary" data-action="bigshot-update">${icon("spark")}提交月度更新</button>
+          <button class="primary" data-action="bigshot-update">${icon("spark")}月度同步</button>
         </div>
       </section>
-      <section class="section">
-        <div class="panel-head"><h3>添加关注作者</h3></div>
+      ${Object.entries(groups).map(([group, people]) => renderInstitutionBoard(group, people)).join("")}
+      <section class="section bigshot-add-panel">
+        <div class="panel-head"><h3>添加关注作者</h3><div class="muted">管理员临时补人用，月度同步时会补全 Scholar 信息。</div></div>
         <form class="bigshot-add-form" data-form="bigshot-add">
           <input name="name" placeholder="作者名，比如 Dima Damen" required>
-          <input name="scholar_url" placeholder="Google Scholar URL">
-          <input name="institution" placeholder="机构，比如 MIT / Stanford / Bristol">
+          <input name="scholar_url" placeholder="Google Scholar profile URL">
+          <input name="institution" placeholder="机构全名，比如 Stanford University">
           <input name="homepage_url" placeholder="Homepage / publications URL">
           <button class="secondary" type="submit">${icon("plus")}添加</button>
         </form>
       </section>
-      ${Object.entries(groups).map(([group, people]) => `
-        <section class="section institution-board">
-          <div class="institution-head">
-            <div class="institution-logo">${h(institutionMark(group))}</div>
-            <div>
-              <h3>${h(group)}</h3>
-              <p>${people.length} 位关注作者</p>
-            </div>
-          </div>
-          <div class="bigshot-grid">
-            ${people.map(renderBigshotCard).join("")}
-          </div>
-        </section>
-      `).join("")}
     </div>
   `;
 }
 
 function renderBigshotCard(person) {
-  const interests = Array.isArray(person.payload?.interests) ? person.payload.interests.slice(0, 5) : [];
+  const interests = Array.isArray(person.payload?.interests) ? person.payload.interests.slice(0, 3) : [];
   return `
     <button class="bigshot-card" data-action="select-bigshot" data-id="${h(person.id)}">
       <div class="bigshot-card-head">
-        <div class="avatar scholar-avatar">${h((person.display_name || person.name || "?").slice(0, 1))}</div>
         <div>
           <h4>${h(person.display_name || person.name)}</h4>
           <p>${h(person.role_title || person.institution)}</p>
@@ -1014,7 +1065,7 @@ function renderBigshotCard(person) {
       </div>
       <div class="bigshot-metrics">
         <span class="metric">Scholar 引用 ${person.citations ? h(person.citations) : "待同步"}</span>
-        <span class="metric">${h(person.last_checked_month || "待更新")}</span>
+        <span class="metric">${h(person.last_checked_month || "待同步")}</span>
       </div>
       <div class="tag-row compact-tags">${interests.map((tag) => `<span class="pill">${h(tag)}</span>`).join("")}</div>
     </button>
@@ -1294,7 +1345,7 @@ function renderDrawer() {
   const noteTitle = item.note?.title || `${item.title} 笔记`;
   const isScholar = item.kind === "scholar";
   return `
-    <aside class="drawer open" style="--drawer-width: ${state.drawerWidth}px;">
+    <aside class="drawer open bigshot-drawer" style="--drawer-width: ${state.drawerWidth}px;">
       <div class="drawer-resize-handle" title="拖拽调整宽度"></div>
       <div class="drawer-head">
         <div>
@@ -1332,9 +1383,11 @@ function renderDrawer() {
 }
 
 function renderBigshotDrawer(person) {
-  const papers = Array.isArray(person.payload?.papers)
+  const allPapers = Array.isArray(person.payload?.papers)
     ? [...person.payload.papers].sort((a, b) => Number(b.year || 0) - Number(a.year || 0))
     : [];
+  const recentPapers = (Array.isArray(person.payload?.recent_papers) ? person.payload.recent_papers : allPapers.filter((paper) => !paper.star)).slice(0, 5);
+  const influentialPapers = (Array.isArray(person.payload?.influential_papers) ? person.payload.influential_papers : allPapers.filter((paper) => paper.star)).slice(0, 5);
   const interests = Array.isArray(person.payload?.interests) ? person.payload.interests : [];
   const links = [
     person.scholar_url ? ["Google Scholar", person.scholar_url] : null,
@@ -1370,23 +1423,40 @@ function renderBigshotDrawer(person) {
           <div class="tag-row">${interests.map((tag) => `<span class="pill">${h(tag)}</span>`).join("")}</div>
         </section>
         <section class="detail-block">
-          <h4>论文列表</h4>
-          <div class="list paper-timeline">
-            ${papers.length ? papers.map((paper) => `
-              <article class="list-item compact bigshot-paper">
-                <div class="meta-row">
-                  <span class="pill">${h(paper.year || "待定")}</span>
-                  <span class="pill">${h(paper.venue || "Publication")}</span>
-                  ${paper.star ? `<span class="star-pill">★ 年均引用 &gt; 100</span>` : ""}
-                </div>
-                <h4>${h(paper.title)}</h4>
-                <p>${h(paper.note || "")}</p>
-              </article>
-            `).join("") : `<div class="empty compact">还没有同步论文。提交月度更新后由 Agent 补充。</div>`}
-          </div>
+          <h4>Google Scholar 最近 5 篇</h4>
+          ${renderBigshotPaperList(recentPapers, person, "月度同步后会替换成 Scholar 上按时间从新到旧的真实条目。")}
+        </section>
+        <section class="detail-block">
+          <h4>高引代表作</h4>
+          ${renderBigshotPaperList(influentialPapers, person, "这里保留年均引用大约超过 100 的代表作。")}
         </section>
       </div>
     </aside>
+  `;
+}
+
+function scholarPaperUrl(paper, person) {
+  if (paper.scholar_url) return paper.scholar_url;
+  if (paper.url) return paper.url;
+  const q = [paper.title, person.display_name || person.name].filter(Boolean).join(" ");
+  return `https://scholar.google.com/scholar?q=${encodeURIComponent(q)}`;
+}
+
+function renderBigshotPaperList(papers, person, emptyText) {
+  return `
+    <div class="list paper-timeline">
+      ${papers.length ? papers.map((paper) => `
+        <article class="list-item compact bigshot-paper">
+          <div class="meta-row">
+            <span class="pill">${h(paper.year || "待定")}</span>
+            <span class="pill">${h(paper.venue || "Publication")}</span>
+            ${paper.star ? `<span class="star-pill">★ 年均引用 &gt; 100</span>` : ""}
+          </div>
+          <h4><a href="${h(scholarPaperUrl(paper, person))}" target="_blank" rel="noopener">${h(paper.title)}</a></h4>
+          <p>${h(paper.note || "")}</p>
+        </article>
+      `).join("") : `<div class="empty compact">${h(emptyText)}</div>`}
+    </div>
   `;
 }
 
@@ -1709,6 +1779,12 @@ document.addEventListener("click", async (event) => {
       state.user = null;
       state.settings = null;
       renderAuth();
+    }
+    if (action === "open-bigshot") {
+      state.view = "bigshots";
+      if (!state.bigshots.people?.length) await loadBigshots();
+      selectBigshot(target.dataset.id);
+      return;
     }
     if (action === "select-bigshot") selectBigshot(target.dataset.id);
     if (action === "bigshot-update") {

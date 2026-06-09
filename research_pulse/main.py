@@ -1576,6 +1576,9 @@ class ResearchPulseHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         self.route("POST")
 
+    def do_DELETE(self):
+        self.route("DELETE")
+
     def route(self, method: str):
         parsed = urlparse(self.path)
         path = parsed.path
@@ -1672,6 +1675,8 @@ class ResearchPulseHandler(BaseHTTPRequestHandler):
                 return self.api_notes(conn, user, qs)
             if method == "POST" and path == "/api/notes":
                 return self.api_save_note(conn, user)
+            if method == "DELETE" and path == "/api/notes":
+                return self.api_delete_note(conn, user)
             if method == "GET" and path == "/api/chat":
                 return self.api_chat(conn, user, qs)
             if method == "POST" and path == "/api/chat":
@@ -2003,6 +2008,27 @@ class ResearchPulseHandler(BaseHTTPRequestHandler):
         except ValueError:
             display_path = str(note_path)
         return self.send_json({"ok": True, "note_path": display_path})
+
+    def api_delete_note(self, conn: sqlite3.Connection, user: sqlite3.Row):
+        data = self.read_json()
+        item_id = data.get("item_id")
+        item = conn.execute("SELECT * FROM items WHERE id = ?", (item_id,)).fetchone()
+        note = conn.execute("SELECT * FROM notes WHERE user_id = ? AND item_id = ?", (user["id"], item_id)).fetchone()
+        if not item or not note:
+            return self.send_json({"error": "note_not_found"}, HTTPStatus.NOT_FOUND)
+        settings = ensure_settings(conn, user["id"])
+        note_path = note_markdown_path(user, item, note["title"], settings)
+        conn.execute("DELETE FROM notes WHERE user_id = ? AND item_id = ?", (user["id"], item_id))
+        deleted_file = False
+        try:
+            root = user_notes_root(user, settings).resolve()
+            resolved = note_path.resolve()
+            if resolved.exists() and (resolved == root or root in resolved.parents) and not is_sensitive_path(resolved):
+                resolved.unlink()
+                deleted_file = True
+        except OSError:
+            deleted_file = False
+        return self.send_json({"ok": True, "deleted_file": deleted_file})
 
     def api_related_notes(self, conn: sqlite3.Connection, user: sqlite3.Row, qs: dict):
         item_id = qs.get("item_id", [""])[0]

@@ -909,14 +909,18 @@ function renderNotes() {
       </div>
       <div class="list" style="padding: 14px;">
         ${state.notes.length ? state.notes.map((note) => `
-          <button class="list-item" data-action="select" data-id="${h(note.item_id)}">
+          <article class="list-item note-list-item">
             <div class="meta-row">
               <span class="kind-badge ${h(note.item_kind)}">${kindMeta[note.item_kind]?.label || note.item_kind}</span>
               <span class="pill">${h(note.updated_at)}</span>
             </div>
             <h4>${h(note.title)}</h4>
             <p>${h(note.content).slice(0, 220)}</p>
-          </button>
+            <div class="inline-row">
+              <button class="secondary" data-action="select" data-id="${h(note.item_id)}">${icon("pen")}打开</button>
+              <button class="ghost danger" data-action="delete-note" data-id="${h(note.item_id)}">${icon("close")}删除</button>
+            </div>
+          </article>
         `).join("") : `<div class="empty">还没有笔记。每篇 paper 的右侧详情里可以直接写。</div>`}
       </div>
     </section>
@@ -1537,6 +1541,7 @@ function renderPaperDetail(item, noteTitle, noteContent) {
         <button class="secondary" type="submit">${icon("check")}保存笔记</button>
         <button class="secondary" type="button" data-action="send-feishu-note" data-id="${h(item.id)}">${icon("send")}发送到飞书文档</button>
         <button class="secondary" type="button" data-action="favorite" data-id="${h(item.id)}" data-favorite="${item.favorite ? "0" : "1"}">${icon("star")}${item.favorite ? "取消收藏" : "收藏"}</button>
+        ${noteContent ? `<button class="ghost danger" type="button" data-action="delete-note" data-id="${h(item.id)}">${icon("close")}删除笔记</button>` : ""}
       </div>
     </form>
     <div class="detail-block">
@@ -1821,6 +1826,25 @@ document.addEventListener("click", async (event) => {
         textarea.value = draftNote(state.selected, state.chatMessages);
       }
     }
+    if (action === "delete-note") {
+      event.stopPropagation();
+      const itemId = target.dataset.id || state.selected?.id || "";
+      if (!itemId) return;
+      if (!window.confirm("确认删除这条笔记吗？网页记录和本地 Markdown 文件都会一起删除。")) return;
+      const result = await api("/api/notes", {
+        method: "DELETE",
+        body: JSON.stringify({ item_id: itemId }),
+      });
+      setMessage(result.deleted_file ? "笔记和本地 Markdown 已删除。" : "笔记已删除，本地 Markdown 文件未找到或已不存在。");
+      if (state.view === "notes") {
+        const data = await api("/api/notes");
+        state.notes = data.notes;
+        render();
+      } else {
+        await loadFeed({ scope: state.view === "today" ? "today" : "all", date: state.archiveDate });
+        await selectItem(itemId);
+      }
+    }
     if (action === "copy-gpt-prompt") {
       if (!state.selected) return;
       const form = document.querySelector('form[data-form="chat"]');
@@ -2004,6 +2028,7 @@ function readableError(error) {
     unauthorized: "请先登录。",
     forbidden: "当前账号没有权限。",
     invalid_note: "笔记内容不能为空。",
+    note_not_found: "这条笔记已经不存在。",
     invalid_share: "分享对象或内容不存在。",
     invalid_chat: "问题不能为空。",
   };

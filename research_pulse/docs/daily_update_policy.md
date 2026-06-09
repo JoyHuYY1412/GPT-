@@ -21,6 +21,17 @@
 - 没有链接时，按规范化后的标题和作者生成去重键。
 - 已经导入过的条目不会再次写入数据库。
 - 没有非重复新条目时，不发送飞书更新提醒。
+- 近两年高影响力、论文考古、AI for Science、学术人物关系网默认避免 90 天内重复主题或重复人物。
+- arXiv 导入会在 DeepSeek 分析和 PDF 截图前先按 arXiv ID、paper/PDF 链接、标题作者全局去重。
+
+## 质量门槛
+
+- 不导入 demo、示例、占位、无来源链接的条目。
+- 论文类条目必须有可打开的 paper/PDF/project/code/GitHub/DOI/source 链接之一。
+- 人物类条目必须有 profile/homepage/source 链接之一。
+- arXiv、近两年高影响力和 AI for Science 条目必须有英文摘要和忠实中文摘要。
+- 标签必须是主题/方法/任务标签，不能是 arXiv、daily、context、agent generated、科学推理、高影响力这类空标签。
+- 核心贡献和主要框架不能只有标题，每条必须解释具体做了什么。
 
 ## 收藏夹整理
 

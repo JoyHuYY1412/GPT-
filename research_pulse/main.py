@@ -2317,7 +2317,7 @@ class ResearchPulseHandler(BaseHTTPRequestHandler):
         if repo_name == "papers":
             root_value = settings["papers_path"]
         elif repo_name == "notes":
-            root_value = settings["notes_path"]
+            root_value = str(user_notes_root(user, settings))
         else:
             repo_name = "wiki"
             root_value = settings["wiki_path"]

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
 import re
@@ -41,6 +42,45 @@ AFFILIATION_ALIASES = {
     "FDU": "Fudan University",
     "UNC": "University of North Carolina at Chapel Hill",
 }
+BANNED_TAGS = {"arxiv", "daily", "agent generated", "context", "科学推理", "高影响力"}
+
+
+def normalize_key(value: str) -> str:
+    text = re.sub(r"https?://\S+", "", value or "")
+    text = re.sub(r"[^0-9A-Za-z\u4e00-\u9fff]+", " ", text).strip().lower()
+    return re.sub(r"\s+", " ", text)
+
+
+def arxiv_dedupe_keys(paper: dict) -> set[str]:
+    keys = {f"arxiv:{paper['arxiv_id'].lower()}"}
+    for value in (paper.get("links") or {}).values():
+        if value:
+            keys.add(f"link:{str(value).strip().lower().rstrip('/')}")
+    title_key = normalize_key(paper.get("title", ""))
+    authors_key = normalize_key(paper.get("authors", ""))[:80]
+    if title_key:
+        digest = hashlib.sha1(f"{title_key}|{authors_key}".encode("utf-8")).hexdigest()[:12]
+        keys.add(f"title:{digest}")
+    return keys
+
+
+def existing_item_keys(conn) -> set[str]:
+    keys = set()
+    for row in conn.execute("SELECT title, authors, links_json, payload_json FROM items").fetchall():
+        links = main.parse_json(row["links_json"], {})
+        payload = main.parse_json(row["payload_json"], {})
+        arxiv_id = str(payload.get("arxiv_id") or "").lower()
+        if arxiv_id:
+            keys.add(f"arxiv:{arxiv_id}")
+        for value in links.values():
+            if value:
+                keys.add(f"link:{str(value).strip().lower().rstrip('/')}")
+        title_key = normalize_key(row["title"])
+        authors_key = normalize_key(row["authors"])[:80]
+        if title_key:
+            digest = hashlib.sha1(f"{title_key}|{authors_key}".encode("utf-8")).hexdigest()[:12]
+            keys.add(f"title:{digest}")
+    return keys
 
 
 def text_of(node: ET.Element, path: str) -> str:
@@ -238,7 +278,7 @@ framework: 3-5 条主要框架/方法流程，每条讲清楚一个模块、数�
     except Exception:
         score = fallback["score"]
     tags = [str(tag).strip() for tag in data.get("tags", fallback["tags"]) if str(tag).strip()]
-    tags = [tag for tag in tags if tag.lower() not in {"arxiv", "daily", "agent generated", "context"}]
+    tags = [tag for tag in tags if tag.lower() not in BANNED_TAGS]
     return {
         "score": max(0, min(10, score)),
         "summary": str(data.get("summary") or fallback["summary"]).strip(),
@@ -466,6 +506,8 @@ def import_papers(papers: list[dict], interests: str, replace_demo: bool) -> int
     item_date = main.today()
     records = []
     with main.connect() as conn:
+        existing_keys = existing_item_keys(conn)
+        seen_keys = set()
         if replace_demo:
             conn.execute(
                 """
@@ -481,11 +523,16 @@ def import_papers(papers: list[dict], interests: str, replace_demo: bool) -> int
                 (item_date,),
             )
         for paper in papers:
+            dedupe_keys = arxiv_dedupe_keys(paper)
+            if dedupe_keys & existing_keys or dedupe_keys & seen_keys:
+                continue
+            seen_keys.update(dedupe_keys)
             analysis = analyze_paper(paper, interests)
             figures = extract_figures(paper["arxiv_id"], paper["title"])
             affiliations = extract_affiliations(paper["arxiv_id"])
             payload = {
                 "source": "arxiv-api",
+                "arxiv_id": paper["arxiv_id"],
                 "published": paper["published"],
                 "updated": paper["updated"],
                 "primary_category": paper["primary_category"],

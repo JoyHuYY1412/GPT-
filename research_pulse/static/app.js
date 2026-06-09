@@ -20,6 +20,8 @@ const state = {
   returnContext: null,
   interestProfile: null,
   adminUsers: [],
+  bigshots: { people: [], month: "", update_policy: "monthly" },
+  selectedBigshot: null,
   repo: { name: "wiki", path: "", data: null },
   drawerWidth: 860,
   message: "",
@@ -44,6 +46,7 @@ const navItems = [
   ["favorites", "收藏流", "star"],
   ["notes", "论文笔记", "pen"],
   ["resources", "资料库", "book"],
+  ["bigshots", "大牛 follow", "network"],
   ["people", "人物卡片", "network"],
   ["inbox", "收件箱", "inbox"],
   ["settings", "设置", "settings"],
@@ -476,9 +479,14 @@ async function loadShareUsers() {
   state.shareUsers = data.users;
 }
 
+async function loadBigshots() {
+  state.bigshots = await api("/api/bigshots");
+}
+
 async function navigate(view) {
   state.view = view;
   state.selected = null;
+  state.selectedBigshot = null;
   setMessage("");
   try {
     if (view === "today") await loadFeed();
@@ -494,6 +502,7 @@ async function navigate(view) {
       const data = await api("/api/notes");
       state.notes = data.notes;
     }
+    if (view === "bigshots") await loadBigshots();
     if (view === "people") await loadFeed({ scope: "all" });
     if (view === "inbox") {
       state.inbox = await api("/api/inbox");
@@ -660,6 +669,7 @@ function renderTopbar() {
     favorites: ["收藏流", "你保存的 paper、考古卡片和人物卡片"],
     notes: ["论文笔记", "每篇 paper 都可以沉淀自己的追问和总结"],
     resources: ["资料库", "论文发现、PDF 阅读、Markdown 笔记和飞书联动的参考源"],
+    bigshots: ["大牛 follow", "按机构展板关注大牛，月度同步 Scholar 新论文和引用变化"],
     people: ["学术人物关系网", "学术圈、title、师承与机构关系的每日卡片"],
     inbox: ["收件箱", "管理员和成员之间互相分享值得看的内容"],
     settings: ["设置", "兴趣画像、推送模块和本地仓库路径"],
@@ -686,6 +696,7 @@ function renderMain() {
   if (state.view === "favorites") return renderFavorites();
   if (state.view === "notes") return renderNotes();
   if (state.view === "resources") return renderResources();
+  if (state.view === "bigshots") return renderBigshots();
   if (state.view === "people") return renderPeople();
   if (state.view === "inbox") return renderInbox();
   if (state.view === "settings") return renderSettings();
@@ -928,6 +939,85 @@ function renderResources() {
         </section>
       `).join("")}
     </div>
+  `;
+}
+
+function groupBigshots() {
+  return (state.bigshots.people || []).reduce((acc, person) => {
+    const key = person.institution_group || person.institution || "未分组";
+    acc[key] = acc[key] || [];
+    acc[key].push(person);
+    return acc;
+  }, {});
+}
+
+function institutionMark(name) {
+  const letters = String(name || "AI").split(/\s+|\/|-/).filter(Boolean).map((part) => part[0]).join("").slice(0, 4).toUpperCase();
+  return letters || "AI";
+}
+
+function renderBigshots() {
+  const groups = groupBigshots();
+  const total = state.bigshots.people?.length || 0;
+  return `
+    <div class="bigshot-page">
+      <section class="section bigshot-hero">
+        <div>
+          <h3>大牛 follow</h3>
+          <p>每月同步一次 Google Scholar / 主页 / publications，红点表示本月有新 paper，高引论文用星标标出。</p>
+        </div>
+        <div class="inline-row">
+          <span class="pill">本月 ${h(state.bigshots.month || "")}</span>
+          <span class="pill">${total} 位关注作者</span>
+          <button class="primary" data-action="bigshot-update">${icon("spark")}提交月度更新</button>
+        </div>
+      </section>
+      <section class="section">
+        <div class="panel-head"><h3>添加关注作者</h3></div>
+        <form class="bigshot-add-form" data-form="bigshot-add">
+          <input name="name" placeholder="作者名，比如 Dima Damen" required>
+          <input name="scholar_url" placeholder="Google Scholar URL">
+          <input name="institution" placeholder="机构，比如 MIT / Stanford / Bristol">
+          <input name="homepage_url" placeholder="Homepage / publications URL">
+          <button class="secondary" type="submit">${icon("plus")}添加</button>
+        </form>
+      </section>
+      ${Object.entries(groups).map(([group, people]) => `
+        <section class="section institution-board">
+          <div class="institution-head">
+            <div class="institution-logo">${h(institutionMark(group))}</div>
+            <div>
+              <h3>${h(group)}</h3>
+              <p>${people.length} 位关注作者</p>
+            </div>
+          </div>
+          <div class="bigshot-grid">
+            ${people.map(renderBigshotCard).join("")}
+          </div>
+        </section>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderBigshotCard(person) {
+  const interests = Array.isArray(person.payload?.interests) ? person.payload.interests.slice(0, 5) : [];
+  return `
+    <button class="bigshot-card" data-action="select-bigshot" data-id="${h(person.id)}">
+      <div class="bigshot-card-head">
+        <div class="avatar scholar-avatar">${h((person.display_name || person.name || "?").slice(0, 1))}</div>
+        <div>
+          <h4>${h(person.display_name || person.name)}</h4>
+          <p>${h(person.role_title || person.institution)}</p>
+        </div>
+        ${person.has_new_this_month ? `<span class="new-dot" title="本月有新 paper"></span>` : ""}
+      </div>
+      <div class="bigshot-metrics">
+        <span class="metric">Scholar 引用 ${person.citations ? h(person.citations) : "待同步"}</span>
+        <span class="metric">${h(person.last_checked_month || "待更新")}</span>
+      </div>
+      <div class="tag-row compact-tags">${interests.map((tag) => `<span class="pill">${h(tag)}</span>`).join("")}</div>
+    </button>
   `;
 }
 
@@ -1196,6 +1286,7 @@ function renderAdmin() {
 }
 
 function renderDrawer() {
+  if (state.selectedBigshot) return renderBigshotDrawer(state.selectedBigshot);
   const item = state.selected;
   if (!item) return `<aside class="drawer"></aside>`;
   const meta = kindMeta[item.kind] || kindMeta.arxiv;
@@ -1235,6 +1326,65 @@ function renderDrawer() {
           </div>
           <button class="secondary" type="submit">${icon("send")}发送到收件箱</button>
         </form>
+      </div>
+    </aside>
+  `;
+}
+
+function renderBigshotDrawer(person) {
+  const papers = Array.isArray(person.payload?.papers)
+    ? [...person.payload.papers].sort((a, b) => Number(b.year || 0) - Number(a.year || 0))
+    : [];
+  const interests = Array.isArray(person.payload?.interests) ? person.payload.interests : [];
+  const links = [
+    person.scholar_url ? ["Google Scholar", person.scholar_url] : null,
+    person.homepage_url ? ["Homepage", person.homepage_url] : null,
+    person.payload?.links?.lab ? ["Lab", person.payload.links.lab] : null,
+    person.payload?.links?.publications ? ["Publications", person.payload.links.publications] : null,
+  ].filter(Boolean);
+  return `
+    <aside class="drawer open" style="--drawer-width: ${state.drawerWidth}px;">
+      <div class="drawer-resize-handle" title="拖拽调整宽度"></div>
+      <div class="drawer-head">
+        <div>
+          <span class="kind-badge scholar">大牛 follow</span>
+          <h3>${h(person.display_name || person.name)}</h3>
+        </div>
+        <button class="icon-btn" data-action="close-drawer" title="关闭">${icon("close")}</button>
+      </div>
+      <div class="drawer-body">
+        <section class="detail-block">
+          <h4>个人简介</h4>
+          <p>${h(person.bio)}</p>
+          <div class="paper-links">${links.map(([label, url]) => `<a class="paper-link" href="${h(url)}" target="_blank" rel="noopener">${h(label)}</a>`).join("")}</div>
+        </section>
+        <section class="detail-block">
+          <h4>科研生平</h4>
+          <div class="two-col-detail">
+            <div><strong>早期方向</strong><p>${h(person.early_focus)}</p></div>
+            <div><strong>近期 focus</strong><p>${h(person.recent_focus)}</p></div>
+          </div>
+        </section>
+        <section class="detail-block">
+          <h4>近期兴趣指示</h4>
+          <div class="tag-row">${interests.map((tag) => `<span class="pill">${h(tag)}</span>`).join("")}</div>
+        </section>
+        <section class="detail-block">
+          <h4>论文列表</h4>
+          <div class="list paper-timeline">
+            ${papers.length ? papers.map((paper) => `
+              <article class="list-item compact bigshot-paper">
+                <div class="meta-row">
+                  <span class="pill">${h(paper.year || "待定")}</span>
+                  <span class="pill">${h(paper.venue || "Publication")}</span>
+                  ${paper.star ? `<span class="star-pill">★ 年均引用 &gt; 100</span>` : ""}
+                </div>
+                <h4>${h(paper.title)}</h4>
+                <p>${h(paper.note || "")}</p>
+              </article>
+            `).join("") : `<div class="empty compact">还没有同步论文。提交月度更新后由 Agent 补充。</div>`}
+          </div>
+        </section>
       </div>
     </aside>
   `;
@@ -1380,6 +1530,7 @@ function findItem(id) {
 }
 
 async function selectItem(id) {
+  state.selectedBigshot = null;
   let item = findItem(id);
   if (!item) {
     await loadFeed({ scope: "all" });
@@ -1399,6 +1550,12 @@ async function selectItem(id) {
     state.qmemRecords = qmem.records || [];
     state.relatedNotes = relatedNotes.notes || [];
   }
+  render();
+}
+
+function selectBigshot(id) {
+  state.selected = null;
+  state.selectedBigshot = (state.bigshots.people || []).find((person) => person.id === id) || null;
   render();
 }
 
@@ -1553,9 +1710,18 @@ document.addEventListener("click", async (event) => {
       state.settings = null;
       renderAuth();
     }
+    if (action === "select-bigshot") selectBigshot(target.dataset.id);
+    if (action === "bigshot-update") {
+      const result = await api("/api/bigshots/update", { method: "POST", body: "{}" });
+      setMessage(result.existing
+        ? `本月大牛 follow 更新任务已在队列中：#${result.task_id}`
+        : `已提交大牛 follow 月度更新任务 #${result.task_id}`);
+      render();
+    }
     if (action === "select") await selectItem(target.dataset.id);
     if (action === "close-drawer") {
       state.selected = null;
+      state.selectedBigshot = null;
       render();
     }
     if (action === "favorite") {
@@ -1711,6 +1877,15 @@ document.addEventListener("submit", async (event) => {
     }
     if (form.dataset.form === "settings") {
       await saveSettings(form);
+    }
+    if (form.dataset.form === "bigshot-add") {
+      state.bigshots = await api("/api/bigshots", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      form.reset();
+      setMessage("已加入大牛 follow，月度更新时会补全 Scholar 信息。");
+      render();
     }
     if (form.dataset.form === "note") {
       await api("/api/notes", {

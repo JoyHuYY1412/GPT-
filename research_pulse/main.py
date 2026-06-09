@@ -38,6 +38,10 @@ def today() -> str:
     return datetime.now(LOCAL_TZ).date().isoformat()
 
 
+def current_month() -> str:
+    return datetime.now(LOCAL_TZ).strftime("%Y-%m")
+
+
 def json_dumps(value) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
@@ -316,6 +320,25 @@ def init_db() -> None:
                 result TEXT NOT NULL DEFAULT '',
                 FOREIGN KEY(user_id) REFERENCES users(id)
             );
+            CREATE TABLE IF NOT EXISTS scholar_follows (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                display_name TEXT NOT NULL,
+                institution TEXT NOT NULL,
+                institution_group TEXT NOT NULL,
+                role_title TEXT NOT NULL,
+                scholar_url TEXT NOT NULL,
+                homepage_url TEXT NOT NULL,
+                citations INTEGER NOT NULL DEFAULT 0,
+                has_new_this_month INTEGER NOT NULL DEFAULT 0,
+                last_checked_month TEXT NOT NULL,
+                bio TEXT NOT NULL,
+                early_focus TEXT NOT NULL,
+                recent_focus TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
             """
         )
         user_settings_columns = {row["name"] for row in conn.execute("PRAGMA table_info(user_settings)").fetchall()}
@@ -339,6 +362,7 @@ def init_db() -> None:
             ensure_settings(conn, user["id"])
         seed_items(conn)
         seed_science_items(conn)
+        seed_scholar_follows(conn)
 
 
 def ensure_settings(conn: sqlite3.Connection, user_id: int) -> dict:
@@ -764,6 +788,184 @@ def seed_science_items(conn: sqlite3.Connection) -> None:
     )
 
 
+def scholar_follow_payload(
+    follow_id: str,
+    name: str,
+    display_name: str,
+    institution: str,
+    institution_group: str,
+    role_title: str,
+    scholar_url: str,
+    homepage_url: str,
+    citations: int,
+    has_new: bool,
+    bio: str,
+    early_focus: str,
+    recent_focus: str,
+    papers: list[dict],
+    interests: list[str],
+    links: dict | None = None,
+) -> tuple:
+    now = now_iso()
+    payload = {
+        "papers": papers,
+        "interests": interests,
+        "links": links or {},
+        "monthly_update_prompt": (
+            "每月检查 Google Scholar profile，按时间从新到旧同步新论文；"
+            "对 average yearly citations > 100 的论文标 star；"
+            "补充本月是否有新论文、总引用量、近期兴趣变化。"
+        ),
+    }
+    return (
+        follow_id,
+        name,
+        display_name,
+        institution,
+        institution_group,
+        role_title,
+        scholar_url,
+        homepage_url,
+        citations,
+        1 if has_new else 0,
+        current_month(),
+        bio,
+        early_focus,
+        recent_focus,
+        json_dumps(payload),
+        now,
+        now,
+    )
+
+
+def seed_scholar_follows(conn: sqlite3.Connection) -> None:
+    records = [
+        scholar_follow_payload(
+            "fei-fei-li",
+            "Fei-Fei Li",
+            "Fei-Fei Li",
+            "Stanford University",
+            "Stanford",
+            "Professor · Human-Centered AI / Computer Vision",
+            "https://scholar.google.com/citations?user=rDfyQnIAAAAJ&hl=en",
+            "https://profiles.stanford.edu/fei-fei-li",
+            0,
+            True,
+            "Fei-Fei Li 是视觉识别、ImageNet、AI4ALL 和 human-centered AI 的代表性学者之一，长期推动大规模视觉数据、视觉理解和以人为中心的人工智能。",
+            "早期围绕 object recognition、scene understanding 和大规模视觉数据集展开，ImageNet 是其最有标志性的学术基础设施工作。",
+            "近年重点转向 human-centered AI、具身智能、医疗/社会场景中的 AI，以及如何让视觉模型服务真实人类任务。",
+            [
+                {"year": 2024, "title": "Holistic embodied AI and human-centered intelligence", "venue": "Research direction", "citations": 0, "citations_per_year": 0, "star": False, "note": "用于跟踪近期兴趣，不代表单篇 Scholar 精确条目。"},
+                {"year": 2015, "title": "ImageNet Large Scale Visual Recognition Challenge", "venue": "IJCV", "citations": 0, "citations_per_year": 100, "star": True, "note": "大规模视觉识别基础设施级论文，高年均引用。"},
+                {"year": 2014, "title": "Microsoft COCO: Common Objects in Context", "venue": "ECCV", "citations": 0, "citations_per_year": 100, "star": True, "note": "场景理解和检测数据集基础工作，高年均引用。"},
+                {"year": 2009, "title": "ImageNet: A large-scale hierarchical image database", "venue": "CVPR", "citations": 0, "citations_per_year": 100, "star": True, "note": "现代视觉预训练与大规模数据路线的核心节点。"},
+            ],
+            ["ImageNet", "视觉识别", "human-centered AI", "具身智能", "医疗 AI"],
+            {"lab": "https://hai.stanford.edu/people/fei-fei-li"},
+        ),
+        scholar_follow_payload(
+            "jiajun-wu",
+            "Jiajun Wu",
+            "Jiajun Wu",
+            "Stanford University",
+            "Stanford",
+            "Assistant Professor · 3D Vision / Physical Reasoning",
+            "https://scholar.google.com/citations?user=2efgcS0AAAAJ&hl=en",
+            "https://jiajunwu.com/",
+            0,
+            True,
+            "Jiajun Wu 关注 3D perception、物理推理、机器人和可组合世界模型，很多工作把视觉理解和可交互/可预测的物理世界连接起来。",
+            "早期代表性工作围绕 3D ShapeNets、场景/形状理解和 visual dynamics，强调从视觉中恢复结构化世界表示。",
+            "近年更关注 embodied AI、robot learning、3D/4D world modeling，以及可用于长程任务的物理和结构先验。",
+            [
+                {"year": 2025, "title": "Recent work on 3D world modeling and robot learning", "venue": "Research direction", "citations": 0, "citations_per_year": 0, "star": False, "note": "月度 follow 占位，后续由 Agent 按 Scholar 更新。"},
+                {"year": 2015, "title": "3D ShapeNets: A Deep Representation for Volumetric Shapes", "venue": "CVPR", "citations": 0, "citations_per_year": 100, "star": True, "note": "3D shape representation 早期高影响工作。"},
+                {"year": 2017, "title": "Learning to See Physics via Visual De-animation", "venue": "NeurIPS", "citations": 0, "citations_per_year": 0, "star": False, "note": "从视觉中恢复物理场景和因果结构的代表性路线。"},
+                {"year": 2017, "title": "Visual Dynamics: Probabilistic Future Frame Synthesis via Cross Convolutional Networks", "venue": "NeurIPS", "citations": 0, "citations_per_year": 0, "star": False, "note": "把视觉预测、动作和动态建模联系起来。"},
+            ],
+            ["3D world model", "物理推理", "机器人", "结构化视觉", "embodied AI"],
+            {"lab": "https://svl.stanford.edu/"},
+        ),
+        scholar_follow_payload(
+            "bernt-schiele",
+            "Bernt Schiele",
+            "Bernt Schiele",
+            "Max Planck Institute for Informatics",
+            "MPI / Saarland",
+            "Director · Computer Vision / Embodied Perception",
+            "https://scholar.google.com/citations?user=z76PBfYAAAAJ&hl=en",
+            "https://people.mpi-inf.mpg.de/~schiele/",
+            0,
+            False,
+            "Bernt Schiele 是欧洲计算机视觉和具身感知的重要学者，长期关注人体理解、视觉识别、场景理解、机器人感知和 benchmark。",
+            "早期围绕 object recognition、人体姿态、行人/动作理解和视觉检测展开，是传统视觉到深度视觉过渡期的重要节点。",
+            "近年兴趣延伸到 embodied perception、robust vision、human-object interaction、视觉语言和开放世界理解。",
+            [
+                {"year": 2024, "title": "Recent work on embodied perception and open-world visual understanding", "venue": "Research direction", "citations": 0, "citations_per_year": 0, "star": False, "note": "月度 follow 占位，后续由 Agent 按 Scholar 更新。"},
+                {"year": 2014, "title": "The PASCAL Visual Object Classes Challenge: A Retrospective", "venue": "IJCV", "citations": 0, "citations_per_year": 100, "star": True, "note": "视觉检测与分类 benchmark 的基础设施级工作。"},
+                {"year": 2014, "title": "Rich feature hierarchies for accurate object detection and semantic segmentation", "venue": "CVPR", "citations": 0, "citations_per_year": 100, "star": True, "note": "R-CNN 代表性高引视觉检测工作之一。"},
+                {"year": 2012, "title": "A database for fine grained activity detection of cooking activities", "venue": "CVPR Workshops", "citations": 0, "citations_per_year": 0, "star": False, "note": "长时动作和日常活动理解相关线索。"},
+            ],
+            ["人体理解", "视觉识别", "embodied perception", "HOI", "benchmark"],
+            {"lab": "https://www.mpi-inf.mpg.de/departments/computer-vision-and-machine-learning"},
+        ),
+        scholar_follow_payload(
+            "dima-damen",
+            "Dima Damen",
+            "Dima Damen",
+            "University of Bristol",
+            "Bristol",
+            "Professor · Egocentric Vision / Video Understanding · Google DeepMind",
+            "",
+            "https://dimadamen.github.io/",
+            0,
+            True,
+            "Dima Damen 主要关注 egocentric vision、视频理解、动作识别和长时活动建模，是 EPIC-KITCHENS 等第一人称视频数据集和评测的重要推动者；公开主页显示她同时任职 University of Bristol 和 Google DeepMind。",
+            "早期工作覆盖动作识别、物体交互、视频中人的行为理解，逐步聚焦到第一人称视角和厨房/日常活动场景。",
+            "近年重点是 egocentric video、long-horizon activity understanding、hands/objects interaction，以及可用于具身智能的日常行为数据。",
+            [
+                {"year": 2025, "title": "Recent work on egocentric video and long-horizon activities", "venue": "Research direction", "citations": 0, "citations_per_year": 0, "star": False, "note": "月度 follow 占位，后续由 Agent 按 Scholar 更新。"},
+                {"year": 2018, "title": "Scaling Egocentric Vision: The EPIC-KITCHENS Dataset", "venue": "ECCV", "citations": 0, "citations_per_year": 100, "star": True, "note": "第一人称视频理解核心数据集，高年均引用候选。"},
+                {"year": 2021, "title": "Rescaling Egocentric Vision: Collection, Pipeline and Challenges for EPIC-KITCHENS-100", "venue": "IJCV", "citations": 0, "citations_per_year": 100, "star": True, "note": "EPIC-KITCHENS 扩展版，长时日常活动理解重要 benchmark。"},
+                {"year": 2022, "title": "Ego4D: Around the World in 3,000 Hours of Egocentric Video", "venue": "CVPR", "citations": 0, "citations_per_year": 100, "star": True, "note": "大规模第一人称视频数据基础设施。"},
+            ],
+            ["egocentric video", "视频理解", "长时活动", "hands-object interaction", "EPIC-KITCHENS"],
+            {"publications": "https://dimadamen.github.io/publications.html"},
+        ),
+    ]
+    conn.executemany(
+        """
+        INSERT OR IGNORE INTO scholar_follows(
+            id, name, display_name, institution, institution_group, role_title,
+            scholar_url, homepage_url, citations, has_new_this_month, last_checked_month,
+            bio, early_focus, recent_focus, payload_json, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        records,
+    )
+
+
+def scholar_follow_from_row(row: sqlite3.Row) -> dict:
+    return {
+        "id": row["id"],
+        "name": row["name"],
+        "display_name": row["display_name"],
+        "institution": row["institution"],
+        "institution_group": row["institution_group"],
+        "role_title": row["role_title"],
+        "scholar_url": row["scholar_url"],
+        "homepage_url": row["homepage_url"],
+        "citations": row["citations"],
+        "has_new_this_month": bool(row["has_new_this_month"]),
+        "last_checked_month": row["last_checked_month"],
+        "bio": row["bio"],
+        "early_focus": row["early_focus"],
+        "recent_focus": row["recent_focus"],
+        "payload": parse_json(row["payload_json"], {}),
+        "updated_at": row["updated_at"],
+    }
+
+
 def item_from_row(row: sqlite3.Row, favorite: bool = False, note: sqlite3.Row | None = None) -> dict:
     return {
         "id": row["id"],
@@ -1064,6 +1266,12 @@ class ResearchPulseHandler(BaseHTTPRequestHandler):
                 return self.api_inbox_save(conn, user)
             if method == "GET" and path == "/api/repository":
                 return self.api_repository(conn, user, qs)
+            if method == "GET" and path == "/api/bigshots":
+                return self.api_bigshots(conn, user)
+            if method == "POST" and path == "/api/bigshots":
+                return self.api_add_bigshot(conn, user)
+            if method == "POST" and path == "/api/bigshots/update":
+                return self.api_queue_bigshot_update(conn, user)
             if path == "/api/admin/users":
                 if not self.require_admin(conn):
                     return
@@ -1736,6 +1944,121 @@ class ResearchPulseHandler(BaseHTTPRequestHandler):
                 },
             }
         )
+
+    def api_bigshots(self, conn: sqlite3.Connection, user: sqlite3.Row):
+        rows = conn.execute(
+            """
+            SELECT * FROM scholar_follows
+            ORDER BY institution_group COLLATE NOCASE, citations DESC, display_name COLLATE NOCASE
+            """
+        ).fetchall()
+        return self.send_json(
+            {
+                "people": [scholar_follow_from_row(row) for row in rows],
+                "month": current_month(),
+                "update_policy": "monthly",
+            }
+        )
+
+    def api_add_bigshot(self, conn: sqlite3.Connection, user: sqlite3.Row):
+        data = self.read_json()
+        name = (data.get("name") or "").strip()
+        scholar_url = (data.get("scholar_url") or "").strip()
+        institution = (data.get("institution") or "").strip() or "待分组机构"
+        homepage_url = (data.get("homepage_url") or "").strip()
+        if len(name) < 2:
+            return self.send_json({"error": "invalid_bigshot"}, HTTPStatus.BAD_REQUEST)
+        follow_id = safe_filename(name, "scholar").lower()
+        record = scholar_follow_payload(
+            follow_id,
+            name,
+            name,
+            institution,
+            institution,
+            "待定时 Agent 补充 title",
+            scholar_url,
+            homepage_url,
+            0,
+            False,
+            "待定时 Agent 从 Google Scholar、主页和公开资料补充科研生平简介。",
+            "待补充早期研究方向。",
+            "待补充近期 focus。",
+            [],
+            [],
+            {},
+        )
+        conn.execute(
+            """
+            INSERT INTO scholar_follows(
+                id, name, display_name, institution, institution_group, role_title,
+                scholar_url, homepage_url, citations, has_new_this_month, last_checked_month,
+                bio, early_focus, recent_focus, payload_json, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                scholar_url = excluded.scholar_url,
+                homepage_url = excluded.homepage_url,
+                institution = excluded.institution,
+                institution_group = excluded.institution_group,
+                updated_at = excluded.updated_at
+            """,
+            record,
+        )
+        return self.api_bigshots(conn, user)
+
+    def api_queue_bigshot_update(self, conn: sqlite3.Connection, user: sqlite3.Row):
+        rows = conn.execute("SELECT * FROM scholar_follows ORDER BY institution_group, display_name").fetchall()
+        people = [scholar_follow_from_row(row) for row in rows]
+        month = current_month()
+        existing = conn.execute(
+            """
+            SELECT id FROM agent_tasks
+            WHERE user_id = ?
+              AND task_type = 'bigshot_monthly_update'
+              AND prompt LIKE ?
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            (user["id"], f"%月份：{month}%"),
+        ).fetchone()
+        if existing:
+            return self.send_json({"ok": True, "task_id": existing["id"], "existing": True})
+        prompt = "\n".join(
+            [
+                "请执行 Research Pulse 的“大牛 follow”月度更新。",
+                f"月份：{month}",
+                "",
+                "任务：",
+                "1. 逐个打开 Google Scholar / homepage / publications 页面，更新总引用量和本月是否有新 paper。",
+                "2. 每个人按时间从新到旧整理最近论文。",
+                "3. 对平均年引用量 > 100 的高引论文加 star 标记。",
+                "4. 补一段科研生平：早期做什么、代表性 title、最近 focus 是什么。",
+                "5. 按机构分组输出，可用于网页展板。",
+                "6. 不确定信息标注待核验，不要虚构引用量。",
+                "",
+                "当前关注名单：",
+                json.dumps(
+                    [
+                        {
+                            "name": person["display_name"],
+                            "institution": person["institution"],
+                            "scholar_url": person["scholar_url"],
+                            "homepage_url": person["homepage_url"],
+                        }
+                        for person in people
+                    ],
+                    ensure_ascii=False,
+                    indent=2,
+                ),
+            ]
+        )
+        cur = conn.execute(
+            """
+            INSERT INTO agent_tasks(user_id, item_id, task_type, prompt, status, created_at)
+            VALUES (?, NULL, 'bigshot_monthly_update', ?, 'pending', ?)
+            """,
+            (user["id"], prompt, now_iso()),
+        )
+        return self.send_json({"ok": True, "task_id": cur.lastrowid})
 
     def api_admin_users(self, conn: sqlite3.Connection):
         rows = conn.execute("SELECT * FROM users ORDER BY status, role, created_at DESC").fetchall()

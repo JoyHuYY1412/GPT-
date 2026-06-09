@@ -1,0 +1,24 @@
+.DS_Store
+__pycache__/
+*.pyc
+
+# local runtime state
+data/
+logs/
+notes/
+agent_outputs/
+tmp_affiliations/
+tmp_pdfs/
+
+# local secrets
+config/feishu_webhook.txt
+config/deepseek_api_key.txt
+
+# local Python environments and vendored wheels
+.arxivreader/
+.venv/
+venv/
+.deps/
+
+# generated/cached paper figures
+static/generated_figures/

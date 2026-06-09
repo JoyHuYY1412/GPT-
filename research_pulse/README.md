@@ -20,7 +20,7 @@ Research Pulse 是一个本地优先的科研信息推送网站，用来把 arXi
   - 核心贡献、主要框架、为什么值得读。
   - PDF Figure 1 / Figure 2 截图和 caption。
   - DeepSeek 即时问答，或复制上下文到 GPT。
-  - Markdown 笔记草稿、保存、相关笔记检索、飞书消息提醒。
+  - Markdown 笔记草稿、保存、删除、相关笔记检索、飞书消息提醒。
 - 收藏流：只滚动收藏条目，快速回顾近期看过的 paper。
 - 大牛 follow：按机构展板关注学者，每月排一次 Agent 更新 Google Scholar / 主页 / publications；红点提示本月新 paper，年均引用量大于 100 的论文用星标标出。
 - 本地知识源：读取 `wiki/`、`papers/`、`notes/` 路径，配合 QMem 聊天记录做相关笔记。
@@ -175,6 +175,21 @@ config/feishu_webhook.txt
 - 从论文详情页把当前 Markdown 笔记发送到飞书消息。
 
 如果要自动创建飞书文档，需要后续接飞书开放平台文档 API，并配置 `app_id`、`app_secret`、文档空间权限和用户授权。
+
+## 笔记同步与删除
+
+每个用户的笔记会同时保存在 SQLite 和本地 Markdown 文件中：
+
+```text
+notes/<username>/<paper-title>.md
+```
+
+在网页端删除笔记时，系统会同步删除：
+
+- `notes` 表中当前用户、当前条目的笔记记录。
+- 当前用户 `notes/<username>/` 目录下对应的 Markdown 文件。
+
+删除逻辑只会访问当前用户自己的 notes 子目录，不会删除其他用户的笔记文件。
 
 ## 手动更新今日内容
 

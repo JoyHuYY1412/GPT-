@@ -1245,12 +1245,13 @@ a {
 }
 
 .markdown-body .math {
-  display: inline-block;
-  padding: 1px 6px;
-  border-radius: 6px;
-  background: #f7f3e8;
-  color: #5a4618;
+  display: inline;
+  padding: 0 1px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
   font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 1em;
 }
 
 .markdown-body a {
@@ -1433,12 +1434,12 @@ a {
 }
 
 .math {
-  padding: 0 3px;
-  border-radius: 5px;
-  background: #f5f8f7;
-  color: #24443d;
-  font-family: "SF Mono", Menlo, Consolas, monospace;
-  font-size: 0.96em;
+  padding: 0 1px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-size: 1em;
 }
 
 .math-block {

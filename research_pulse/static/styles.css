@@ -1389,6 +1389,33 @@ a {
   margin-top: 10px;
 }
 
+.math {
+  padding: 0 3px;
+  border-radius: 5px;
+  background: #f5f8f7;
+  color: #24443d;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.96em;
+}
+
+.math-block {
+  overflow-x: auto;
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #f7faf9;
+  color: #24443d;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre;
+}
+
+.note-live-preview {
+  min-height: 90px;
+}
+
 .qmem-excerpt {
   display: -webkit-box;
   overflow: hidden;
@@ -1474,6 +1501,10 @@ a {
   padding: 16px;
 }
 
+.bigshot-preview .panel-head h3 {
+  font-size: 22px;
+}
+
 .bigshot-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -1557,19 +1588,10 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 84px;
-  padding: 18px;
+  min-height: 72px;
+  padding: 16px 18px;
   border-bottom: 1px solid var(--soft-line);
-  background: linear-gradient(180deg, #fbfcfb, #f5f8f6);
-}
-
-.institution-kicker {
-  margin-bottom: 4px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 850;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  background: #fbfcfb;
 }
 
 .institution-head h3 {
@@ -1581,7 +1603,7 @@ a {
 .institution-head p {
   margin: 7px 0 0;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.45;
 }
 
@@ -1676,10 +1698,32 @@ a {
 
 .compact-tags .pill,
 .bigshot-drawer .tag-row .pill {
-  min-height: 28px;
-  padding: 0 10px;
-  font-size: 14px;
-  font-weight: 780;
+  min-height: 31px;
+  padding: 0 11px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.drawer-subtitle {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.author-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  margin-bottom: 9px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.author-line strong {
+  color: var(--ink);
+  font-size: 16px;
 }
 
 .two-col-detail {

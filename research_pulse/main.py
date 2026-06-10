@@ -1781,14 +1781,21 @@ class ResearchPulseHandler(BaseHTTPRequestHandler):
         params = []
         where = []
         latest_by_kind = {}
-        if scope != "all" and not requested_date:
+        if scope != "all" and requested_date:
+            latest_by_kind = {
+                row["kind"]: row["latest_date"]
+                for row in conn.execute(
+                    "SELECT kind, MAX(item_date) AS latest_date FROM items WHERE item_date <= ? GROUP BY kind",
+                    (requested_date,),
+                ).fetchall()
+            }
+            where.append("item_date <= ?")
+            params.append(requested_date)
+        elif scope != "all":
             latest_by_kind = {
                 row["kind"]: row["latest_date"]
                 for row in conn.execute("SELECT kind, MAX(item_date) AS latest_date FROM items GROUP BY kind").fetchall()
             }
-        if scope != "all" and requested_date:
-            where.append("item_date = ?")
-            params.append(requested_date)
         if kind:
             where.append("kind = ?")
             params.append(kind)

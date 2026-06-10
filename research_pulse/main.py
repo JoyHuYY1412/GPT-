@@ -965,7 +965,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://cs.stanford.edu/~pliang/",
             0,
             False,
-            "Percy Liang 适合放在 LLM、agent、评测和基础模型基础设施这一条线上 follow，很多工作不是单点模型，而是围绕模型行为、数据、评测和系统化理解展开。",
+            "Percy Liang 长期研究语言、结构化预测、基础模型评测和 AI agent 基础设施。他的工作常常围绕模型行为、数据、评测和系统化理解展开，而不是只追逐单点模型性能。",
             "早期覆盖语义解析、弱监督、语言与结构化知识，长期关注模型如何从语言中学习可操作的表示。",
             "近年重点转向 foundation model evaluation、HELM、agent benchmark、数据治理和模型透明度，对判断一个新 agent 工作是否真的可靠很有参考价值。",
             [
@@ -986,7 +986,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://people.eecs.berkeley.edu/~svlevine/",
             0,
             False,
-            "Sergey Levine 是 robot learning、deep RL 和 embodied intelligence 方向必须 follow 的作者之一，特别适合看从强化学习、离线数据到真实机器人泛化这条路线。",
+            "Sergey Levine 是 robot learning、deep RL 和 embodied intelligence 方向的重要学者，研究主线覆盖从强化学习、离线数据到真实机器人泛化。",
             "早期工作围绕 guided policy search、深度强化学习和视觉运动控制，推动了 end-to-end robot learning 的重要转向。",
             "近年重点在离线 RL、机器人数据、通用机器人策略、world model 和可扩展 embodied learning。",
             [
@@ -1008,7 +1008,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://people.eecs.berkeley.edu/~pabbeel/",
             0,
             False,
-            "Pieter Abbeel 适合从机器人、RL、模仿学习和产业化机器人系统这条线长期 follow，他的工作常常把算法、真实机器人平台和可扩展训练连接起来。",
+            "Pieter Abbeel 长期研究机器人、强化学习、模仿学习和真实机器人系统。他的工作常常把算法、真实机器人平台和可扩展训练连接起来。",
             "早期围绕 apprenticeship learning、直升机自主控制、机器人操作和强化学习展开。",
             "近年与大规模机器人学习、扩散策略、生成模型和机器人系统创业生态关系密切。",
             [
@@ -1030,7 +1030,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://people.eecs.berkeley.edu/~malik/",
             0,
             False,
-            "Jitendra Malik 是计算机视觉领域的基础性人物，适合从视觉表示、分割、三维/具身感知和科学品味上长期 follow。",
+            "Jitendra Malik 是计算机视觉领域的基础性人物，长期影响视觉表示、分割、三维/具身感知和视觉研究的科学品味。",
             "早期代表性贡献覆盖图像分割、物体识别、视觉 grouping 和场景理解，是传统视觉理论和现代视觉学习之间的重要桥梁。",
             "近年团队持续影响 embodied perception、robot learning、视觉语言和数据驱动视觉理解。",
             [
@@ -1052,7 +1052,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://web.mit.edu/cocosci/josh.html",
             0,
             False,
-            "Josh Tenenbaum 适合放在“经典理论与科学思维”的 follow 池里，他的工作把认知科学、概率程序、物理直觉和人类概念学习连接得很深。",
+            "Josh Tenenbaum 长期研究认知科学、概率程序、物理直觉和人类概念学习。他的工作为 world model、组合泛化和结构化推理提供了重要理论背景。",
             "早期围绕 Bayesian concept learning、概率图模型和认知建模展开，强调用结构化先验解释人类学习。",
             "近年持续影响 intuitive physics、program induction、neuro-symbolic AI 和世界模型的理论底座。",
             [
@@ -1074,7 +1074,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://web.mit.edu/phillipi/",
             0,
             False,
-            "Phillip Isola 值得放在视觉生成、表征学习和视觉系统设计这一条线上 follow，很多工作兼具方法简洁性和启发性。",
+            "Phillip Isola 长期研究视觉生成、表征学习和视觉系统设计。很多工作兼具方法简洁性和启发性，常能把清晰的问题表述迁移到新的视觉任务。",
             "早期代表性工作包括 image-to-image translation、视觉表征和感知相似性，强调简单 formulation 带来的方法迁移。",
             "近年关注视觉生成、可组合表示、视觉语言和具身/交互式视觉系统。",
             [
@@ -1096,7 +1096,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://www.cs.cmu.edu/~katef/",
             0,
             False,
-            "Katerina Fragkiadaki 适合 follow 视觉动力学、机器人操作、3D/4D world model 和物理交互建模这条线，和你的 world model / VLA 兴趣贴得很近。",
+            "Katerina Fragkiadaki 长期研究视觉动力学、机器人操作、3D/4D world model 和物理交互建模，研究方向与 world model / VLA 高度相关。",
             "早期工作覆盖动作理解、视频中的对象和人类行为建模，强调从视觉序列中恢复动态结构。",
             "近年重点转向机器人、神经场景表示、物理可预测模型和可交互世界建模。",
             [
@@ -1117,7 +1117,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://dieterfox.github.io/",
             0,
             False,
-            "Dieter Fox 适合 follow 机器人感知、SLAM、具身 AI 和大厂机器人研究之间的连接，尤其适合看机器人系统如何从经典概率机器人走向 foundation model。",
+            "Dieter Fox 长期研究机器人感知、SLAM、具身 AI 和机器人系统，研究脉络体现了从经典概率机器人到 foundation model 机器人系统的演化。",
             "早期围绕概率机器人、定位、SLAM 和移动机器人感知展开，是机器人基础方法的重要作者。",
             "近年关注 embodied AI、机器人操作、视觉语言机器人和 NVIDIA 机器人研究生态。",
             [
@@ -1138,7 +1138,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://people.csail.mit.edu/regina/",
             0,
             False,
-            "Regina Barzilay 适合放在 AI for Science / AI for Health 的 follow 池里，尤其适合看 NLP、机器学习和真实医疗/药物发现问题如何结合。",
+            "Regina Barzilay 长期研究 NLP、机器学习、医疗 AI 和药物发现。她的工作展示了机器学习如何进入真实医疗和科学发现流程。",
             "早期工作覆盖文本生成、语义建模和信息抽取，后来把机器学习用于临床文本、影像和药物发现。",
             "近年重点是 AI for drug discovery、医疗 AI、分子建模和真实世界医学决策支持。",
             [
@@ -1160,7 +1160,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://www.ipd.uw.edu/people/david-baker/",
             0,
             False,
-            "David Baker 是 AI for Science 和蛋白质设计方向必须 follow 的作者之一，适合看生成模型、结构预测和真实科学发现之间如何形成闭环。",
+            "David Baker 是 AI for Science 和蛋白质设计方向的核心学者之一。他的研究连接生成模型、结构预测和真实科学发现，代表了计算设计与实验验证的闭环路线。",
             "早期长期推动 Rosetta、蛋白质结构建模和 de novo protein design，是计算蛋白质设计的核心人物。",
             "近年重点是深度学习辅助蛋白质设计、功能蛋白生成、结构生成和科学实验闭环。",
             [
@@ -1182,7 +1182,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://tensorlab.cms.caltech.edu/users/anima/",
             0,
             False,
-            "Anima Anandkumar 适合 follow 科学机器学习、神经算子、张量方法和 AI for Science 工具链，是把深度学习用于 PDE、天气、分子和物理系统的重要作者。",
+            "Anima Anandkumar 长期研究科学机器学习、神经算子、张量方法和 AI for Science 工具链，是把深度学习用于 PDE、天气、分子和物理系统的重要作者。",
             "早期工作覆盖张量分解、无监督学习理论和高维统计，强调有理论结构的方法。",
             "近年重点在 neural operators、Fourier Neural Operator、科学仿真、气候/流体/材料等 AI for Science 场景。",
             [
@@ -1203,7 +1203,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://deepmind.google/about/leadership/demis-hassabis/",
             0,
             False,
-            "Demis Hassabis 适合从 Google DeepMind 的研究战略、AI for Science 和通用智能路线去 follow，不只是看单篇论文，更适合看方向布局。",
+            "Demis Hassabis 是 Google DeepMind 的核心领导者之一，研究脉络覆盖强化学习、通用智能和 AI for Science。关注重点在研究战略和方向布局，而不只是单篇论文。",
             "早期背景横跨认知神经科学、游戏 AI 和强化学习，DeepMind 早期路线把深度学习、RL 和 neuroscience 连接起来。",
             "近年重点是 Gemini、AlphaFold、AI for Science、世界模型和能够跨任务泛化的智能系统。",
             [
@@ -1224,7 +1224,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://deepmind.google/research/people/johnjumper/",
             0,
             False,
-            "John Jumper 是 AlphaFold 路线的核心作者之一，适合 follow 蛋白质结构、分子系统和 AI for Science 从 benchmark 到真实科学影响的变化。",
+            "John Jumper 是 AlphaFold 路线的核心作者之一，研究主线围绕蛋白质结构、分子系统和 AI for Science 从 benchmark 到真实科学影响的转化。",
             "早期围绕物理、化学和蛋白质建模展开，强调把结构先验、几何和学习系统结合起来。",
             "近年重点是 AlphaFold 系列、多分子结构、蛋白质相互作用和科学发现工作流。",
             [
@@ -1245,7 +1245,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://www.di.ens.fr/~schmid/",
             0,
             False,
-            "Cordelia Schmid 是视频理解、动作识别和视觉表示学习方向的重要作者，适合从经典视觉到现代视频 foundation model 的演化去 follow。",
+            "Cordelia Schmid 是视频理解、动作识别和视觉表示学习方向的重要学者，研究脉络贯穿经典视觉、视频表征和现代视频 foundation model。",
             "早期贡献覆盖局部特征、视觉检索、动作识别和视频表示，是计算机视觉基础路线的重要人物。",
             "近年重点在视频理解、视觉语言、长视频建模和大规模视觉表示。",
             [
@@ -1266,7 +1266,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://www.cs.utexas.edu/~grauman/",
             0,
             False,
-            "Kristen Grauman 适合 follow egocentric vision、active perception 和视频理解，尤其是从第一人称数据到具身智能 benchmark 的连接。",
+            "Kristen Grauman 长期研究 egocentric vision、active perception 和视频理解，尤其关注第一人称数据、日常活动理解和具身智能 benchmark。",
             "早期覆盖视觉识别、主动学习、图像检索和视频理解。",
             "近年重点是 Ego4D、第一人称视频、具身感知、可交互视觉和长时活动理解。",
             [
@@ -1287,7 +1287,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://www.cs.toronto.edu/~fidler/",
             0,
             False,
-            "Sanja Fidler 适合 follow 3D vision、自动驾驶场景理解、生成式世界建模和 NVIDIA 视觉研究生态。",
+            "Sanja Fidler 长期研究 3D vision、自动驾驶场景理解和生成式世界建模，也与 NVIDIA 视觉研究生态联系紧密。",
             "早期覆盖场景理解、检测、3D 表示和视觉语言。",
             "近年重点在 3D/4D 生成、自动驾驶仿真、视觉语言模型和可编辑场景生成。",
             [
@@ -1308,7 +1308,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://groups.csail.mit.edu/vision/torralbalab/",
             0,
             False,
-            "Antonio Torralba 适合 follow 场景理解、视觉数据集、视觉常识和从图像到世界结构的建模路线。",
+            "Antonio Torralba 长期研究场景理解、视觉数据集、视觉常识和从图像到世界结构的建模路线。",
             "早期代表性工作覆盖场景统计、context、物体和场景之间的关系，以及大规模视觉数据。",
             "近年持续影响视觉表征、视觉数据、生成模型评估和世界理解。",
             [
@@ -1329,7 +1329,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://www.robots.ox.ac.uk/~az/",
             0,
             False,
-            "Andrew Zisserman 适合 follow 视觉识别、视频理解、自监督学习和 Oxford VGG 系列工作。",
+            "Andrew Zisserman 长期研究视觉识别、视频理解、自监督学习和 Oxford VGG 系列工作，是现代计算机视觉的重要代表学者。",
             "早期贡献覆盖几何视觉、多视图几何、视觉识别和大规模视觉表示。",
             "近年重点在视频理解、音视频学习、自监督视觉语言和大规模视觉模型。",
             [
@@ -1350,7 +1350,7 @@ def seed_scholar_follows(conn: sqlite3.Connection) -> None:
             "https://www.cs.mcgill.ca/~jpineau/",
             0,
             False,
-            "Joelle Pineau 适合 follow 强化学习、医疗 AI、可复现性和负责任 AI，能帮助判断 agent/RL 工作是否有扎实评估。",
+            "Joelle Pineau 长期研究强化学习、医疗 AI、可复现性和负责任 AI。她的研究和组织工作能帮助判断 agent/RL 系统是否具有扎实评估基础。",
             "早期覆盖 POMDP、机器人辅助、医疗决策和强化学习。",
             "近年重点在 RL、开源评测、reproducibility、responsible AI 和 Meta AI 研究生态。",
             [

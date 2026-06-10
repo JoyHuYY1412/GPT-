@@ -237,6 +237,13 @@ function sourceLine(item) {
   return [cleanMeta(item.authors), cleanMeta(item.org), cleanMeta(item.venue)].filter(Boolean).join(" · ");
 }
 
+function affiliationLine(item) {
+  const affiliations = Array.isArray(item.payload?.affiliations) ? item.payload.affiliations.filter(Boolean) : [];
+  const affiliation = affiliations.length ? affiliations.join("; ") : cleanMeta(item.org);
+  if (affiliation) return affiliation;
+  return item.kind === "arxiv" ? "单位待从 PDF 提取" : "";
+}
+
 function renderAuthorInfo(item) {
   const affiliationText = Array.isArray(item.payload?.affiliations) && item.payload.affiliations.length
     ? item.payload.affiliations.join("; ")
@@ -851,6 +858,7 @@ function renderSection(title, hint, items, sectionId = title) {
 
 function renderItemCard(item) {
   const meta = kindMeta[item.kind] || { label: item.kind || "条目", short: "RP" };
+  const affiliation = affiliationLine(item);
   return `
     <article class="item-card" data-action="select" data-id="${h(item.id)}">
       <div class="cover ${h(item.kind)}"><span>${meta.short}</span></div>
@@ -862,6 +870,7 @@ function renderItemCard(item) {
         </div>
         ${renderTags(item)}
         <h4>${h(item.title)}</h4>
+        ${affiliation ? `<div class="card-source-line">${h(affiliation)}</div>` : ""}
         <p class="summary">${h(item.summary)}</p>
         <div class="card-actions">
           <button class="secondary" data-action="favorite" data-id="${h(item.id)}" data-favorite="${item.favorite ? "0" : "1"}">
@@ -1009,17 +1018,22 @@ function bigshotInstitutionSummary(people) {
 function renderBigshotPreview() {
   const people = (state.bigshots.people || []).slice(0, 10);
   if (!people.length) return "";
+  const sectionId = "bigshot-preview";
+  const collapsed = Boolean(state.collapsedSections[sectionId]);
   return `
-    <section class="section bigshot-preview">
+    <section class="section bigshot-preview ${collapsed ? "collapsed" : ""}">
       <div class="panel-head">
         <div>
           <h3>大牛 follow</h3>
         </div>
-        <button class="secondary" data-action="nav" data-view="bigshots">${icon("network")}查看展板</button>
+        <div class="inline-row">
+          <span class="pill">${people.length}</span>
+          <button class="secondary compact-btn" data-action="toggle-section" data-section="${h(sectionId)}">${collapsed ? "展开" : "收起"}</button>
+        </div>
       </div>
-      <div class="bigshot-strip">
+      ${collapsed ? "" : `<div class="bigshot-strip">
         ${people.map(renderBigshotChip).join("")}
-      </div>
+      </div>`}
     </section>
   `;
 }

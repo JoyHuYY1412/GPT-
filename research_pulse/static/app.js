@@ -206,13 +206,13 @@ function normalizeTagText(value) {
   return map[text.toLowerCase()] || text;
 }
 
-function renderTags(item) {
+function renderTags(item, extraClass = "") {
   const topics = topicTags(item);
   if (!topics.length) return "";
   const row = (tags, className) => tags.length ? `<div class="tag-row ${className}">${tags.map((tag) => `
     <button class="pill tag-chip" data-action="archive-tag" data-tag="${h(tag)}" data-source-id="${h(item.id)}">${h(tag)}</button>
   `).join("")}</div>` : "";
-  return `<div class="tag-stack">${row(topics, "topic-tags")}</div>`;
+  return `<div class="tag-stack ${h(extraClass)}">${row(topics, "topic-tags")}</div>`;
 }
 
 function renderSourceBadges(item) {
@@ -241,11 +241,12 @@ function renderAuthorInfo(item) {
   const affiliationText = Array.isArray(item.payload?.affiliations) && item.payload.affiliations.length
     ? item.payload.affiliations.join("; ")
     : cleanMeta(item.org);
+  const sourceValue = cleanMeta(item.venue);
   const rows = [
     ["作者", cleanMeta(item.authors)],
     ["单位", affiliationText],
-    ["来源", cleanMeta(item.venue)],
-  ].filter(([, value]) => value);
+    item.kind === "arxiv" && /^arxiv$/i.test(sourceValue) ? null : ["来源", sourceValue],
+  ].filter((row) => row && row[1]);
   if (!rows.length) {
     return `<div class="paper-source-grid"><div><strong>作者 / 单位</strong><span>等待 PDF / arXiv 元数据同步</span></div></div>`;
   }
@@ -1373,24 +1374,21 @@ function renderDrawer() {
   const noteTitle = item.note?.title || `${item.title} 笔记`;
   const isScholar = item.kind === "scholar";
   return `
-    <aside class="drawer open bigshot-drawer" style="--drawer-width: ${state.drawerWidth}px;">
+    <aside class="drawer open paper-drawer" style="--drawer-width: ${state.drawerWidth}px;">
       <div class="drawer-resize-handle" title="拖拽调整宽度"></div>
       <div class="drawer-head">
         <div>
-          <span class="kind-badge ${h(item.kind)}">${meta.label}</span>
-          <h3>${h(item.title)}</h3>
-        </div>
-        <button class="icon-btn" data-action="close-drawer" title="关闭">${icon("close")}</button>
-      </div>
-      <div class="drawer-body">
-        <div class="detail-block">
-          <div class="meta-row">
+          <div class="drawer-meta-row">
             <span class="kind-badge ${h(item.kind)}">${meta.label}</span>
             ${renderScorePill(item)}
             ${renderSourceBadges(item)}
           </div>
-          ${renderTags(item)}
+          <h3>${h(item.title)}</h3>
+          ${renderTags(item, "drawer-topic-tags")}
         </div>
+        <button class="icon-btn" data-action="close-drawer" title="关闭">${icon("close")}</button>
+      </div>
+      <div class="drawer-body">
         ${isScholar ? renderScholarDetail(item) : renderPaperDetail(item, noteTitle, noteContent)}
         <form class="detail-block" data-form="share" data-id="${h(item.id)}">
           <h4>分享给成员</h4>

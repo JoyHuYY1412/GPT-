@@ -247,14 +247,10 @@ function renderAuthorInfo(item) {
   const affiliationText = Array.isArray(item.payload?.affiliations) && item.payload.affiliations.length
     ? item.payload.affiliations.join("; ")
     : cleanMeta(item.org);
-  const authorAffiliations = Array.isArray(item.payload?.author_affiliations)
-    ? item.payload.author_affiliations.filter(Boolean).join("; ")
-    : "";
   const sourceValue = cleanMeta(item.venue);
   const rows = [
     ["作者", cleanMeta(item.authors)],
-    ["作者单位", authorAffiliations],
-    ["全部机构", affiliationText],
+    ["单位", affiliationText],
     item.kind === "arxiv" && /^arxiv$/i.test(sourceValue) ? null : ["来源", sourceValue],
   ].filter((row) => row && row[1]);
   if (!rows.length) {

@@ -691,7 +691,7 @@ function renderTopbar() {
     favorites: ["收藏流", "你保存的 paper、考古卡片和人物卡片"],
     notes: ["论文笔记", "每篇 paper 都可以沉淀自己的追问和总结"],
     resources: ["资料库", "论文发现、PDF 阅读、Markdown 笔记和飞书联动的参考源"],
-    bigshots: ["大牛 follow", "按机构展板关注大牛，月度同步 Scholar 新论文和引用变化"],
+    bigshots: ["大牛 follow", ""],
     people: ["学术人物关系网", "学术圈、title、师承与机构关系的每日卡片"],
     inbox: ["收件箱", "管理员和成员之间互相分享值得看的内容"],
     settings: ["设置", "兴趣画像、推送模块和本地仓库路径"],
@@ -699,13 +699,17 @@ function renderTopbar() {
   };
   const [title, subtitle] = titles[state.view] || titles.today;
   const showSettingsButton = !["settings", "admin"].includes(state.view);
+  const bigshotTools = state.view === "bigshots"
+    ? `<span class="top-pill">本月 ${h(state.bigshots.month || "")}</span><button class="primary" data-action="bigshot-update">${icon("spark")}月度同步</button>`
+    : "";
   return `
     <div class="topbar">
       <div>
         <h2>${title}</h2>
-        <p>${subtitle}</p>
+        ${subtitle ? `<p>${subtitle}</p>` : ""}
       </div>
       <div class="top-actions">
+        ${bigshotTools}
         <button class="secondary" data-action="refresh">${icon("spark")}刷新</button>
         ${showSettingsButton ? `<button class="primary" data-action="nav" data-view="settings">${icon("settings")}设置</button>` : ""}
       </div>
@@ -1050,23 +1054,11 @@ function renderInstitutionBoard(group, people) {
 
 function renderBigshots() {
   const groups = groupBigshots();
-  const total = state.bigshots.people?.length || 0;
   return `
     <div class="bigshot-page">
-      <section class="section bigshot-hero">
-        <div>
-          <h3>大牛 follow</h3>
-          <p>按学校和研究机构长期跟踪核心作者：每月同步 Google Scholar / 主页 / publications，红点提示本月新 paper，高引代表作用星标标出。</p>
-        </div>
-        <div class="inline-row">
-          <span class="pill">本月 ${h(state.bigshots.month || "")}</span>
-          <span class="pill">${total} 位关注作者</span>
-          <button class="primary" data-action="bigshot-update">${icon("spark")}月度同步</button>
-        </div>
-      </section>
       ${Object.entries(groups).map(([group, people]) => renderInstitutionBoard(group, people)).join("")}
       <section class="section bigshot-add-panel">
-        <div class="panel-head"><h3>添加关注作者</h3><div class="muted">管理员临时补人用，月度同步时会补全 Scholar 信息。</div></div>
+        <div class="panel-head"><h3>添加关注作者</h3></div>
         <form class="bigshot-add-form" data-form="bigshot-add">
           <input name="name" placeholder="作者名，比如 Dima Damen" required>
           <input name="scholar_url" placeholder="Google Scholar profile URL">
@@ -1081,8 +1073,10 @@ function renderBigshots() {
 
 function renderBigshotCard(person) {
   const interests = Array.isArray(person.payload?.interests) ? person.payload.interests.slice(0, 3) : [];
-  const citationText = person.citations ? `Scholar 引用 ${person.citations}` : "引用数待更新";
-  const checkedText = person.last_checked_month ? `更新 ${person.last_checked_month}` : "等待月度同步";
+  const metrics = [
+    person.citations ? `Scholar 引用 ${person.citations}` : "",
+    person.last_checked_month ? `更新 ${person.last_checked_month}` : "",
+  ].filter(Boolean);
   return `
     <button class="bigshot-card" data-action="select-bigshot" data-id="${h(person.id)}">
       <div class="bigshot-card-head">
@@ -1092,10 +1086,7 @@ function renderBigshotCard(person) {
         </div>
         ${person.has_new_this_month ? `<span class="new-dot" title="本月有新 paper"></span>` : ""}
       </div>
-      <div class="bigshot-metrics">
-        <span class="metric">${h(citationText)}</span>
-        <span class="metric">${h(checkedText)}</span>
-      </div>
+      ${metrics.length ? `<div class="bigshot-metrics">${metrics.map((text) => `<span class="metric">${h(text)}</span>`).join("")}</div>` : ""}
       <div class="tag-row compact-tags">${interests.map((tag) => `<span class="pill">${h(tag)}</span>`).join("")}</div>
     </button>
   `;
@@ -1440,7 +1431,7 @@ function renderBigshotDrawer(person) {
       <div class="drawer-body">
         <section class="detail-block">
           <h4>个人简介</h4>
-          <div class="author-line"><strong>${h(person.institution || "机构待更新")}</strong>${person.citations ? `<span>Scholar 引用 ${h(person.citations)}</span>` : `<span>引用数待更新</span>`}</div>
+          <div class="author-line"><strong>${h(person.institution || "机构待同步")}</strong>${person.citations ? `<span>Scholar 引用 ${h(person.citations)}</span>` : ""}</div>
           <p>${h(person.bio)}</p>
           <div class="paper-links">${links.map(([label, url]) => `<a class="paper-link" href="${h(url)}" target="_blank" rel="noopener">${h(label)}</a>`).join("")}</div>
         </section>
@@ -1455,10 +1446,10 @@ function renderBigshotDrawer(person) {
           <h4>近期兴趣指示</h4>
           <div class="tag-row">${interests.map((tag) => `<span class="pill">${h(tag)}</span>`).join("")}</div>
         </section>
-        <section class="detail-block">
-          <h4>Google Scholar 最近 5 篇</h4>
-          ${renderBigshotPaperList(recentPapers, person, "月度同步后会替换成 Scholar 上按时间从新到旧的真实条目。", 5)}
-        </section>
+        ${recentPapers.length ? `<section class="detail-block">
+          <h4>近期论文</h4>
+          ${renderBigshotPaperList(recentPapers, person, "", 5)}
+        </section>` : ""}
         <section class="detail-block">
           <h4>高引代表作</h4>
           ${renderBigshotPaperList(influentialPapers, person, "这里保留年均引用大约超过 100 的代表作。")}

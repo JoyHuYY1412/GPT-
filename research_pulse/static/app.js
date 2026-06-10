@@ -324,6 +324,12 @@ function isSafeMediaUrl(url) {
   return text.startsWith("/") || /^https?:\/\//i.test(text);
 }
 
+function renderInlineMath(value) {
+  return String(value || "")
+    .replace(/\^\{?([A-Za-z0-9+\-.]+)\}?/g, "<sup>$1</sup>")
+    .replace(/_\{?([A-Za-z0-9+\-.]+)\}?/g, "<sub>$1</sub>");
+}
+
 function renderInlineMarkdown(value) {
   return h(value || "")
     .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
@@ -332,8 +338,9 @@ function renderInlineMarkdown(value) {
     .replace(/\[([^\]]+)\]((?:\(|%28)(https?:\/\/[^)%]+)(?:\)|%29))/g, '<a href="$3" target="_blank" rel="noopener">$1</a>')
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\b([A-Za-z][A-Za-z0-9_-]*)\$\^\{?(\d+)\}?\$/g, "$1<sup>$2</sup>")
     .replace(/\bnext\^(\d+)\b/g, "next<sup>$1</sup>")
-    .replace(/\$([^$]+)\$/g, '<span class="math">$1</span>');
+    .replace(/\$([^$]+)\$/g, (match, expr) => `<span class="math">${renderInlineMath(expr)}</span>`);
 }
 
 function renderLeadMarkdown(value) {

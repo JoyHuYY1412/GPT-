@@ -906,7 +906,11 @@ function renderArchive() {
     ${Object.keys(kindMeta).map((kind) => {
       const items = grouped()[kind];
       const date = state.archiveDate || "往日";
-      return renderSection(kindMeta[kind].title, items.length ? `${date} 的留档` : `${date} 没有该模块真实更新`, items);
+      const actualDate = items[0]?.date || "";
+      const hint = items.length
+        ? (actualDate && actualDate !== date ? `沿用 ${actualDate} 的最新留档` : `${date} 的留档`)
+        : `${date} 之前没有该模块留档`;
+      return renderSection(kindMeta[kind].title, hint, items);
     }).join("")}
   `;
 }

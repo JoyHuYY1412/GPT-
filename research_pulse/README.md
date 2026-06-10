@@ -79,6 +79,60 @@ http://127.0.0.1:8766
 RESEARCH_PULSE_ADMIN_PASSWORD='your-strong-password' python3 main.py
 ```
 
+## 后端是怎么运行的
+
+Research Pulse 是本地网站，所以必须有一个 Python 后端进程在运行。区别只是它是否占着一个 Terminal 窗口。
+
+前台运行，适合调试：
+
+```bash
+python3 main.py
+```
+
+这种方式会占用当前 Terminal。按 `Ctrl-C` 或关闭 Terminal 后，网站就会停止。
+
+后台运行，适合日常使用：
+
+```bash
+source .arxivreader/bin/activate 2>/dev/null || true
+nohup env RESEARCH_PULSE_PORT=8766 python3 main.py > logs/server.log 2>&1 &
+```
+
+这里：
+
+- `python3 main.py` 是真正的网站后端。
+- `&` 让它进入后台运行。
+- `nohup` 让它尽量不随 Terminal 关闭而退出。
+- `logs/server.log` 保存运行日志。
+
+查看后端是否还在：
+
+```bash
+lsof -i tcp:8766
+```
+
+停止后台后端：
+
+```bash
+kill $(lsof -ti tcp:8766)
+```
+
+后台运行不等于开机自启。Mac 重启后，`nohup` 启动的进程会消失；要开机自动运行，请使用下面的 launchd 启动项。
+
+如果要让局域网里的其他电脑访问，需要让服务监听 `0.0.0.0`，并确认 macOS 防火墙允许访问：
+
+```bash
+RESEARCH_PULSE_HOST=0.0.0.0 RESEARCH_PULSE_PORT=8766 python3 main.py
+```
+
+然后其他人在同一局域网访问：
+
+```text
+http://你的Mac局域网IP:8766/
+```
+
+如果别人是在自己的电脑上使用，也需要在他们自己的电脑上运行后端，或者安装对应的开机启动项。
+
 ## 使用 `.arxivreader` 虚拟环境
 
 如果你在项目根目录放了虚拟环境 `.arxivreader`，启动脚本会自动执行：

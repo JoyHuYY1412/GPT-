@@ -247,7 +247,7 @@ function renderAuthorInfo(item) {
     ["来源", cleanMeta(item.venue)],
   ].filter(([, value]) => value);
   if (!rows.length) {
-    return `<div class="paper-source-grid"><div><strong>作者 / 单位</strong><span>待补充</span></div></div>`;
+    return `<div class="paper-source-grid"><div><strong>作者 / 单位</strong><span>等待 PDF / arXiv 元数据同步</span></div></div>`;
   }
   return `<div class="paper-source-grid">${rows.map(([label, value]) => `
     <div><strong>${h(label)}</strong><span>${h(value)}</span></div>
@@ -321,6 +321,7 @@ function renderInlineMarkdown(value) {
     .replace(/\[([^\]]+)\]((?:\(|%28)(https?:\/\/[^)%]+)(?:\)|%29))/g, '<a href="$3" target="_blank" rel="noopener">$1</a>')
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\bnext\^(\d+)\b/g, "next<sup>$1</sup>")
     .replace(/\$([^$]+)\$/g, '<span class="math">$1</span>');
 }
 
@@ -343,8 +344,26 @@ function renderMarkdown(value) {
   const list = [];
   let code = false;
   let codeLines = [];
+  let mathBlock = false;
+  let mathLines = [];
   lines.forEach((raw) => {
     const line = raw.trimEnd();
+    if (line.trim() === "$$") {
+      if (mathBlock) {
+        out.push(`<div class="math-block">${h(mathLines.join("\n"))}</div>`);
+        mathLines = [];
+        mathBlock = false;
+      } else {
+        flushParagraph(para, out);
+        flushList(list, out);
+        mathBlock = true;
+      }
+      return;
+    }
+    if (mathBlock) {
+      mathLines.push(raw);
+      return;
+    }
     if (line.trim().startsWith("```")) {
       if (code) {
         out.push(`<pre><code>${h(codeLines.join("\n"))}</code></pre>`);
@@ -399,6 +418,7 @@ function renderMarkdown(value) {
   flushParagraph(para, out);
   flushList(list, out);
   if (codeLines.length) out.push(`<pre><code>${h(codeLines.join("\n"))}</code></pre>`);
+  if (mathLines.length) out.push(`<div class="math-block">${h(mathLines.join("\n"))}</div>`);
   return out.join("") || "<p></p>";
 }
 
@@ -869,7 +889,11 @@ function renderArchive() {
       ${state.dates.map((date) => `<button class="${state.archiveDate === date ? "primary" : "secondary"}" data-action="archive-date" data-date="${h(date)}">${h(date)}</button>`).join("")}
     </div>
     ${renderStats()}
-    ${Object.keys(kindMeta).map((kind) => renderSection(kindMeta[kind].title, `${state.archiveDate || "往日"} 的留档`, grouped()[kind])).join("")}
+    ${Object.keys(kindMeta).map((kind) => {
+      const items = grouped()[kind];
+      const date = state.archiveDate || "往日";
+      return renderSection(kindMeta[kind].title, items.length ? `${date} 的留档` : `${date} 没有该模块真实更新`, items);
+    }).join("")}
   `;
 }
 
@@ -985,7 +1009,6 @@ function renderBigshotPreview() {
       <div class="panel-head">
         <div>
           <h3>大牛 follow</h3>
-          <div class="muted">按学校和研究机构跟踪 Scholar 新论文、近期兴趣和高引代表作</div>
         </div>
         <button class="secondary" data-action="nav" data-view="bigshots">${icon("network")}查看展板</button>
       </div>
@@ -1014,7 +1037,6 @@ function renderInstitutionBoard(group, people) {
     <section class="section institution-board ${collapsed ? "collapsed" : ""}">
       <div class="institution-head">
         <div>
-          <div class="institution-kicker">Institution Board</div>
           <h3>${h(institutionMark(group))}</h3>
           <p>${people.length} 位关注作者${bigshotInstitutionSummary(people) ? ` · ${h(bigshotInstitutionSummary(people))}` : ""}</p>
         </div>
@@ -1058,6 +1080,8 @@ function renderBigshots() {
 
 function renderBigshotCard(person) {
   const interests = Array.isArray(person.payload?.interests) ? person.payload.interests.slice(0, 3) : [];
+  const citationText = person.citations ? `Scholar 引用 ${person.citations}` : "引用数待更新";
+  const checkedText = person.last_checked_month ? `更新 ${person.last_checked_month}` : "等待月度同步";
   return `
     <button class="bigshot-card" data-action="select-bigshot" data-id="${h(person.id)}">
       <div class="bigshot-card-head">
@@ -1068,8 +1092,8 @@ function renderBigshotCard(person) {
         ${person.has_new_this_month ? `<span class="new-dot" title="本月有新 paper"></span>` : ""}
       </div>
       <div class="bigshot-metrics">
-        <span class="metric">Scholar 引用 ${person.citations ? h(person.citations) : "待同步"}</span>
-        <span class="metric">${h(person.last_checked_month || "待同步")}</span>
+        <span class="metric">${h(citationText)}</span>
+        <span class="metric">${h(checkedText)}</span>
       </div>
       <div class="tag-row compact-tags">${interests.map((tag) => `<span class="pill">${h(tag)}</span>`).join("")}</div>
     </button>
@@ -1388,30 +1412,37 @@ function renderDrawer() {
 
 function renderBigshotDrawer(person) {
   const allPapers = Array.isArray(person.payload?.papers)
-    ? [...person.payload.papers].sort((a, b) => Number(b.year || 0) - Number(a.year || 0))
+    ? [...person.payload.papers].filter((paper) => !isPlaceholderBigshotPaper(paper)).sort((a, b) => Number(b.year || 0) - Number(a.year || 0))
     : [];
-  const recentPapers = (Array.isArray(person.payload?.recent_papers) ? person.payload.recent_papers : allPapers.filter((paper) => !paper.star)).slice(0, 5);
-  const influentialPapers = (Array.isArray(person.payload?.influential_papers) ? person.payload.influential_papers : allPapers.filter((paper) => paper.star)).slice(0, 5);
+  const recentPapers = (Array.isArray(person.payload?.recent_papers)
+    ? person.payload.recent_papers.filter((paper) => !isPlaceholderBigshotPaper(paper))
+    : allPapers.filter((paper) => !paper.star)).slice(0, 5);
+  const influentialPapers = (Array.isArray(person.payload?.influential_papers)
+    ? person.payload.influential_papers.filter((paper) => !isPlaceholderBigshotPaper(paper))
+    : allPapers.filter((paper) => paper.star)).slice(0, 5);
   const interests = Array.isArray(person.payload?.interests) ? person.payload.interests : [];
+  const scholarSearch = `https://scholar.google.com/scholar?q=${encodeURIComponent(`${person.display_name || person.name} ${person.institution || ""}`.trim())}`;
   const links = [
-    person.scholar_url ? ["Google Scholar", person.scholar_url] : null,
+    ["Google Scholar", person.scholar_url || scholarSearch],
     person.homepage_url ? ["Homepage", person.homepage_url] : null,
     person.payload?.links?.lab ? ["Lab", person.payload.links.lab] : null,
     person.payload?.links?.publications ? ["Publications", person.payload.links.publications] : null,
   ].filter(Boolean);
   return `
-    <aside class="drawer open" style="--drawer-width: ${state.drawerWidth}px;">
+    <aside class="drawer open bigshot-drawer" style="--drawer-width: ${state.drawerWidth}px;">
       <div class="drawer-resize-handle" title="拖拽调整宽度"></div>
       <div class="drawer-head">
         <div>
           <span class="kind-badge scholar">大牛 follow</span>
           <h3>${h(person.display_name || person.name)}</h3>
+          <p class="drawer-subtitle">${h([person.role_title, person.institution].filter(Boolean).join(" · "))}</p>
         </div>
         <button class="icon-btn" data-action="close-drawer" title="关闭">${icon("close")}</button>
       </div>
       <div class="drawer-body">
         <section class="detail-block">
           <h4>个人简介</h4>
+          <div class="author-line"><strong>${h(person.institution || "机构待更新")}</strong>${person.citations ? `<span>Scholar 引用 ${h(person.citations)}</span>` : `<span>引用数待更新</span>`}</div>
           <p>${h(person.bio)}</p>
           <div class="paper-links">${links.map(([label, url]) => `<a class="paper-link" href="${h(url)}" target="_blank" rel="noopener">${h(label)}</a>`).join("")}</div>
         </section>
@@ -1428,7 +1459,7 @@ function renderBigshotDrawer(person) {
         </section>
         <section class="detail-block">
           <h4>Google Scholar 最近 5 篇</h4>
-          ${renderBigshotPaperList(recentPapers, person, "月度同步后会替换成 Scholar 上按时间从新到旧的真实条目。")}
+          ${renderBigshotPaperList(recentPapers, person, "月度同步后会替换成 Scholar 上按时间从新到旧的真实条目。", 5)}
         </section>
         <section class="detail-block">
           <h4>高引代表作</h4>
@@ -1439,6 +1470,11 @@ function renderBigshotDrawer(person) {
   `;
 }
 
+function isPlaceholderBigshotPaper(paper) {
+  const text = [paper.title, paper.venue, paper.note].filter(Boolean).join(" ");
+  return /Recent work on|Research direction|月度 follow|占位/i.test(text);
+}
+
 function scholarPaperUrl(paper, person) {
   if (paper.scholar_url) return paper.scholar_url;
   if (paper.url) return paper.url;
@@ -1446,7 +1482,7 @@ function scholarPaperUrl(paper, person) {
   return `https://scholar.google.com/scholar?q=${encodeURIComponent(q)}`;
 }
 
-function renderBigshotPaperList(papers, person, emptyText) {
+function renderBigshotPaperList(papers, person, emptyText, expectedCount = 0) {
   return `
     <div class="list paper-timeline">
       ${papers.length ? papers.map((paper) => `
@@ -1460,6 +1496,7 @@ function renderBigshotPaperList(papers, person, emptyText) {
           <p>${h(paper.note || "")}</p>
         </article>
       `).join("") : `<div class="empty compact">${h(emptyText)}</div>`}
+      ${expectedCount && papers.length && papers.length < expectedCount ? `<div class="empty compact">当前已同步 ${papers.length} 篇；月度 Agent 会继续补齐 Scholar 最近 ${expectedCount} 篇。</div>` : ""}
     </div>
   `;
 }
@@ -1530,12 +1567,10 @@ function renderPaperDetail(item, noteTitle, noteContent) {
       <h4>生成笔记草稿</h4>
       <input type="hidden" name="title" value="${h(noteTitle)}">
       <textarea name="content" placeholder="可以写：问题定义、核心方法、数据假设、启发、我想继续追问什么。">${h(noteContent)}</textarea>
-      ${noteContent ? `
-        <details class="markdown-preview" open>
-          <summary>Markdown 预览</summary>
-          <div class="markdown-body">${renderMarkdown(noteContent)}</div>
-        </details>
-      ` : ""}
+      <details class="markdown-preview" open>
+        <summary>Markdown 预览</summary>
+        <div class="markdown-body note-live-preview">${noteContent ? renderMarkdown(noteContent) : `<p class="muted">生成草稿或输入内容后，这里会实时预览 Markdown、加粗、列表和公式。</p>`}</div>
+      </details>
       <div class="inline-row">
         <button class="primary" type="button" data-action="generate-note">${icon("pen")}生成草稿</button>
         <button class="secondary" type="submit">${icon("check")}保存笔记</button>
@@ -1557,6 +1592,14 @@ function renderPaperDetail(item, noteTitle, noteContent) {
       `).join("")}</div>` : `<p>还没有相关笔记。生成草稿并保存后，会写入根目录的 notes 文件夹。</p>`}
     </div>
   `;
+}
+
+function updateNotePreview(value) {
+  const preview = document.querySelector(".note-live-preview");
+  if (!preview) return;
+  preview.innerHTML = value.trim()
+    ? renderMarkdown(value)
+    : `<p class="muted">生成草稿或输入内容后，这里会实时预览 Markdown、加粗、列表和公式。</p>`;
 }
 
 function renderScholarDetail(item) {
@@ -1722,7 +1765,11 @@ document.addEventListener("click", async (event) => {
       render();
     }
     if (action === "nav") await navigate(target.dataset.view);
-    if (action === "refresh") await navigate(state.view);
+    if (action === "refresh") {
+      await navigate(state.view);
+      setMessage("已刷新当前页面。");
+      render();
+    }
     if (action === "settings-jump") {
       const section = document.querySelector(`#settings-${target.dataset.target}`);
       section?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1824,6 +1871,7 @@ document.addEventListener("click", async (event) => {
       if (state.selected && textarea && title) {
         title.value = `${state.selected.title} 阅读笔记`;
         textarea.value = draftNote(state.selected, state.chatMessages);
+        updateNotePreview(textarea.value);
       }
     }
     if (action === "delete-note") {
@@ -1940,6 +1988,11 @@ document.addEventListener("pointerdown", (event) => {
 });
 
 document.addEventListener("input", (event) => {
+  const noteForm = event.target.closest('form[data-form="note"]');
+  if (noteForm && event.target.matches('textarea[name="content"]')) {
+    updateNotePreview(event.target.value);
+    return;
+  }
   const form = event.target.closest('form[data-form="settings"]');
   if (!form) return;
   scheduleSettingsSave(form, event.target.tagName === "TEXTAREA" ? 800 : 300);
@@ -2040,40 +2093,57 @@ function draftNote(item, messages = [], qmemRecords = []) {
     .filter((msg) => msg.role === "user")
     .map((msg) => `- ${msg.content}`)
     .join("\n");
+  const lastAnswer = [...messages].reverse().find((msg) => msg.role !== "user")?.content || "";
   const qmem = qmemRecords
     .map((record) => `- ${record.title}: ${record.excerpt || record.path}`)
     .join("\n");
+  const contributions = Array.isArray(item.payload?.contributions) ? item.payload.contributions.filter(Boolean) : [];
+  const framework = Array.isArray(item.payload?.framework) ? item.payload.framework.filter(Boolean) : [];
+  const figures = Array.isArray(item.payload?.figures) ? item.payload.figures.slice(0, 2) : [];
+  const zhAbstract = item.payload?.zh_abstract || item.payload?.abstract_zh || "";
+  const originalAbstract = item.payload?.original_abstract || item.payload?.abstract_en || "";
+  const contributionLines = contributions.length
+    ? contributions.map((entry) => `- ${entry}`)
+    : [`- ${item.summary}`];
+  const frameworkLines = framework.length
+    ? framework.map((entry) => `- ${entry}`)
+    : (item.thinking ? [`- ${item.thinking}`] : []);
+  const figureLines = figures.length
+    ? figures.flatMap((figure, index) => [
+        `![${figure.caption || `Figure ${index + 1}`}](${figure.url})`,
+        `**图 ${index + 1} 解读**：${figureExplanation(figure, index)}`,
+        "",
+      ])
+    : ["- 主图还没有从 PDF 中成功提取，精读时优先补 Figure 1 和 Figure 2。"];
   return [
-    `# ${item.title}`,
+    `# ${item.title} 阅读笔记`,
     "",
     `类型：${kindMeta[item.kind]?.title || item.kind}`,
     item.kind === "arxiv" ? `arXiv ${arxivScoreText(item)}` : "",
     sourceLine(item) ? `来源：${sourceLine(item)}` : "",
     tagText(item) ? `标签：${tagText(item)}` : "",
     "",
-    "## 笔记要点",
-    "- **问题定义**：待补充。",
-    "- **核心方法**：待补充。",
-    "- **关键假设**：待补充。",
-    "- **可迁移启发**：待补充。",
-    "",
-    "## 这篇在解决什么问题",
+    "## 一句话定位",
     item.summary,
     "",
-    "## 为什么值得读",
-    item.why || "待补充。",
+    "## 摘要",
+    zhAbstract ? `**中文摘要**：${zhAbstract}` : `**中文摘要**：${item.summary}`,
+    originalAbstract ? `\n**英文摘要**：${originalAbstract}` : "",
     "",
-    "## 方法/思想线索",
-    item.thinking || "待补充。",
+    "## 核心贡献",
+    contributionLines.join("\n"),
+    "",
+    "## 主要框架",
+    frameworkLines.length ? frameworkLines.join("\n") : "- 建议结合论文方法图继续核验模块、训练目标和推理流程。",
+    "",
+    "## 为什么值得读",
+    item.why || "这篇工作与当前兴趣方向相关，适合作为当天精读候选。",
     "",
     "## 图文理解",
-    ...(Array.isArray(item.payload?.figures) && item.payload.figures.length
-      ? item.payload.figures.slice(0, 2).flatMap((figure, index) => [
-          `![${figure.caption || `Figure ${index + 1}`}](${figure.url})`,
-          figureExplanation(figure, index),
-          "",
-        ])
-      : ["- 暂未提取到主图；后续可从 PDF Figure 1 / Figure 2 补充。"]),
+    figureLines.join("\n"),
+    "",
+    lastAnswer ? "## 已有问答整理" : "",
+    lastAnswer ? lastAnswer : "",
     "",
     "## 我接下来要追问",
     questions || "- 这篇工作的核心假设是什么？\n- 哪个假设可以被放松，形成新的选题？\n- 和我的 wiki/papers 里已有兴趣有什么连接？",
@@ -2122,10 +2192,10 @@ function buildGptPrompt(item, question = "", qmemRecords = []) {
     item.payload?.zh_abstract || item.payload?.abstract || "",
     "",
     "核心贡献：",
-    contributions || "待补充。",
+    contributions || "请结合正文提炼，不要用占位模板。",
     "",
     "主要框架：",
-    framework || "待补充。",
+    framework || "请结合 Figure 1/2 和方法章节提炼，不要用占位模板。",
     "",
     "PDF Figure 1/2 caption：",
     figures || "暂未提取。",

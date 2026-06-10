@@ -191,6 +191,12 @@ notes/<username>/<paper-title>.md
 
 删除逻辑只会访问当前用户自己的 notes 子目录，不会删除其他用户的笔记文件。
 
+笔记编辑器支持 Markdown 预览：
+
+- “生成草稿”会根据当前条目的摘要、核心贡献、主要框架、Figure 1/2、已有问答和相关材料生成可继续编辑的草稿，不再输出“待补充”模板。
+- 预览会实时渲染标题、列表、加粗、链接、图片、行内公式和 `$$...$$` 公式块。
+- 保存后会同步写入当前用户的 `notes/<username>/` Markdown 文件。
+
 ## 手动更新今日内容
 
 拉取最新 arXiv，最多 10 篇，并替换当天 demo/fallback 条目：
@@ -240,9 +246,10 @@ python agent_daily.py --fallback --notify
 
 - Google Scholar 总引用量。
 - 本月是否有新 paper。
-- 最近论文列表，按年份从新到旧。
-- 高引论文是否满足平均年引用量大于 100。
+- `payload.recent_papers`：Google Scholar 最近 5 篇真实论文，按时间从新到旧。
+- `payload.influential_papers`：平均年引用量大于 100 的高引代表作，使用 `star=true` 标记。
 - 作者早期方向、代表性 title、近期 focus。
+- 不允许用 `Recent work on ...`、`Research direction` 等占位条目冒充论文；未核验到的列表留空，让前端显示“月度 Agent 补齐”。
 
 ## Agent 输出 JSON 约定
 

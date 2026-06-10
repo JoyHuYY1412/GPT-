@@ -152,9 +152,15 @@ function normalizeTagList(values) {
 
 function sourceTags(item) {
   if (item.kind === "scholar") return [];
+  if (item.kind === "arxiv") {
+    const affiliations = Array.isArray(item.payload?.affiliations) ? item.payload.affiliations : [];
+    const corresponding = Array.isArray(item.payload?.corresponding_affiliations) ? item.payload.corresponding_affiliations : [];
+    const primary = [item.payload?.primary_affiliation, item.org];
+    return normalizeTagList(corresponding.length ? corresponding : (affiliations.length ? affiliations : primary)).slice(0, 2);
+  }
   const explicit = Array.isArray(item.payload?.source_badges) ? item.payload.source_badges : [];
   if (explicit.length) return normalizeTagList(explicit).slice(0, 4);
-  const fallback = item.kind === "arxiv" ? [item.payload?.primary_affiliation] : [item.org, item.venue];
+  const fallback = [item.org, item.venue];
   return normalizeTagList(fallback).slice(0, 4);
 }
 
@@ -237,21 +243,18 @@ function sourceLine(item) {
   return [cleanMeta(item.authors), cleanMeta(item.org), cleanMeta(item.venue)].filter(Boolean).join(" · ");
 }
 
-function affiliationLine(item) {
-  const affiliations = Array.isArray(item.payload?.affiliations) ? item.payload.affiliations.filter(Boolean) : [];
-  const affiliation = affiliations.length ? affiliations.join("; ") : cleanMeta(item.org);
-  if (affiliation) return affiliation;
-  return item.kind === "arxiv" ? "单位待从 PDF 提取" : "";
-}
-
 function renderAuthorInfo(item) {
   const affiliationText = Array.isArray(item.payload?.affiliations) && item.payload.affiliations.length
     ? item.payload.affiliations.join("; ")
     : cleanMeta(item.org);
+  const authorAffiliations = Array.isArray(item.payload?.author_affiliations)
+    ? item.payload.author_affiliations.filter(Boolean).join("; ")
+    : "";
   const sourceValue = cleanMeta(item.venue);
   const rows = [
     ["作者", cleanMeta(item.authors)],
-    ["单位", affiliationText],
+    ["作者单位", authorAffiliations],
+    ["全部机构", affiliationText],
     item.kind === "arxiv" && /^arxiv$/i.test(sourceValue) ? null : ["来源", sourceValue],
   ].filter((row) => row && row[1]);
   if (!rows.length) {
@@ -331,6 +334,15 @@ function renderInlineMarkdown(value) {
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\bnext\^(\d+)\b/g, "next<sup>$1</sup>")
     .replace(/\$([^$]+)\$/g, '<span class="math">$1</span>');
+}
+
+function renderLeadMarkdown(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  if (text.includes("**")) return renderInlineMarkdown(text);
+  const match = text.match(/^([^：:]{2,36})([：:])(.+)$/);
+  if (!match) return renderInlineMarkdown(text);
+  return `<strong>${renderInlineMarkdown(match[1])}</strong>${h(match[2])}${renderInlineMarkdown(match[3])}`;
 }
 
 function flushParagraph(buffer, out) {
@@ -858,7 +870,6 @@ function renderSection(title, hint, items, sectionId = title) {
 
 function renderItemCard(item) {
   const meta = kindMeta[item.kind] || { label: item.kind || "条目", short: "RP" };
-  const affiliation = affiliationLine(item);
   return `
     <article class="item-card" data-action="select" data-id="${h(item.id)}">
       <div class="cover ${h(item.kind)}"><span>${meta.short}</span></div>
@@ -870,7 +881,6 @@ function renderItemCard(item) {
         </div>
         ${renderTags(item)}
         <h4>${h(item.title)}</h4>
-        ${affiliation ? `<div class="card-source-line">${h(affiliation)}</div>` : ""}
         <p class="summary">${h(item.summary)}</p>
         <div class="card-actions">
           <button class="secondary" data-action="favorite" data-id="${h(item.id)}" data-favorite="${item.favorite ? "0" : "1"}">
@@ -1530,11 +1540,11 @@ function renderPaperDetail(item, noteTitle, noteContent) {
       </section>
       <section class="detail-block">
         <h4>核心贡献</h4>
-        ${contributions.length ? `<ul class="tight-list">${contributions.map((entry) => `<li>${renderInlineMarkdown(entry)}</li>`).join("")}</ul>` : `<div class="markdown-body">${renderMarkdown(item.summary)}</div>`}
+        ${contributions.length ? `<ul class="tight-list">${contributions.map((entry) => `<li>${renderLeadMarkdown(entry)}</li>`).join("")}</ul>` : `<div class="markdown-body">${renderMarkdown(item.summary)}</div>`}
       </section>
       <section class="detail-block">
         <h4>主要框架</h4>
-        ${framework.length ? `<ul class="tight-list">${framework.map((entry) => `<li>${renderInlineMarkdown(entry)}</li>`).join("")}</ul>` : `<div class="markdown-body">${renderMarkdown(item.thinking)}</div>`}
+        ${framework.length ? `<ul class="tight-list">${framework.map((entry) => `<li>${renderLeadMarkdown(entry)}</li>`).join("")}</ul>` : `<div class="markdown-body">${renderMarkdown(item.thinking)}</div>`}
         ${figures.length ? `<div class="figure-grid">${figures.slice(0, 2).map((figure, index) => `
           <figure class="paper-figure">
             <button class="figure-zoom" type="button" data-action="open-figure" data-src="${h(figure.url)}" data-caption="${h(figure.caption || `Figure ${index + 1}`)}" data-explanation="${h(figureExplanation(figure, index))}">

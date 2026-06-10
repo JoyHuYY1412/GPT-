@@ -659,19 +659,27 @@ a {
   gap: 7px;
 }
 
+.drawer-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
 .tag-stack {
   display: grid;
   gap: 7px;
 }
 
 .source-tags .tag-chip {
-  background: #eaf0f8;
-  color: var(--blue);
+  background: #eef2ef;
+  color: #46524e;
 }
 
 .source-chip {
-  background: #eaf0f8;
-  color: var(--blue);
+  background: #eef2ef;
+  color: #46524e;
 }
 
 .topic-tags .tag-chip {
@@ -715,13 +723,13 @@ a {
   padding: 0 8px;
   background: var(--ink);
   color: #fff;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 750;
 }
 
 .kind-badge {
   padding: 0 8px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 750;
 }
 
@@ -940,15 +948,36 @@ a {
 }
 
 .paper-link.primary {
-  border-color: #a9cbc4;
-  background: #f0faf7;
-  color: #0f5f58;
+  border-color: #cbd7d2;
+  background: #f7faf8;
+  color: #20302c;
 }
 
 .paper-link.lookup {
-  border-color: #d6dcd8;
-  background: #f8f9f7;
-  color: #34403d;
+  border-color: #cbd7d2;
+  background: #f7faf8;
+  color: #20302c;
+}
+
+.paper-drawer .drawer-head {
+  align-items: flex-start;
+}
+
+.paper-drawer .drawer-head h3 {
+  margin-top: 0;
+}
+
+.paper-drawer .drawer-topic-tags {
+  margin-top: 10px;
+}
+
+.paper-drawer .drawer-topic-tags .tag-chip,
+.paper-drawer .drawer-meta-row .tag-chip,
+.paper-drawer .drawer-meta-row .score,
+.paper-drawer .drawer-meta-row .kind-badge {
+  min-height: 26px;
+  font-size: 13px;
+  line-height: 1;
 }
 
 .paper-source-grid {

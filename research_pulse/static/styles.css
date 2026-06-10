@@ -601,17 +601,6 @@ a {
   line-height: 1.24;
 }
 
-.card-source-line {
-  display: -webkit-box;
-  overflow: hidden;
-  color: #0f5f58;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  font-size: 14px;
-  font-weight: 750;
-  line-height: 1.45;
-}
-
 .mini-card p {
   display: -webkit-box;
   overflow: hidden;
@@ -787,7 +776,7 @@ a {
   display: -webkit-box;
   overflow: hidden;
   margin: 0;
-  color: var(--muted);
+  color: #25312e;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
   font-size: 15px;
@@ -931,7 +920,7 @@ a {
 
 .detail-block p {
   margin: 0;
-  color: var(--muted);
+  color: var(--ink);
   font-size: 16px;
   line-height: 1.68;
 }
@@ -1052,7 +1041,7 @@ a {
 
 .abstract-card p {
   margin: 0;
-  color: var(--muted);
+  color: var(--ink);
   font-size: 15px;
   line-height: 1.7;
 }
@@ -1066,7 +1055,7 @@ a {
   gap: 7px;
   padding-left: 18px;
   margin: 0;
-  color: var(--muted);
+  color: var(--ink);
   font-size: 16px;
   line-height: 1.68;
 }
@@ -1170,7 +1159,7 @@ a {
 }
 
 .markdown-body {
-  color: var(--muted);
+  color: var(--ink);
   font-size: 16px;
   line-height: 1.72;
 }

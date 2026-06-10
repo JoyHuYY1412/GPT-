@@ -322,6 +322,9 @@ function isSafeMediaUrl(url) {
 
 function renderInlineMath(value) {
   return String(value || "")
+    .replace(/\\times/g, "×")
+    .replace(/\\cdot/g, "·")
+    .replace(/\\pm/g, "±")
     .replace(/\^\{?([A-Za-z0-9+\-.]+)\}?/g, "<sup>$1</sup>")
     .replace(/_\{?([A-Za-z0-9+\-.]+)\}?/g, "<sub>$1</sub>");
 }
@@ -335,7 +338,7 @@ function renderInlineMarkdown(value) {
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\b([A-Za-z][A-Za-z0-9_-]*)\$\^\{?(\d+)\}?\$/g, "$1<sup>$2</sup>")
-    .replace(/\bnext\^(\d+)\b/g, "next<sup>$1</sup>")
+    .replace(/\b([A-Za-z][A-Za-z0-9_-]*)\^(\d+)\b/g, "$1<sup>$2</sup>")
     .replace(/\$([^$]+)\$/g, (match, expr) => `<span class="math">${renderInlineMath(expr)}</span>`);
 }
 

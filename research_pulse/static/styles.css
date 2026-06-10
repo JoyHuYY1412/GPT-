@@ -1164,6 +1164,29 @@ a {
   line-height: 1.72;
 }
 
+.markdown-body sup,
+.markdown-body sub,
+.tight-list sup,
+.tight-list sub,
+.abstract-card sup,
+.abstract-card sub {
+  position: relative;
+  font-size: 0.72em;
+  line-height: 0;
+}
+
+.markdown-body sup,
+.tight-list sup,
+.abstract-card sup {
+  top: -0.48em;
+}
+
+.markdown-body sub,
+.tight-list sub,
+.abstract-card sub {
+  bottom: -0.22em;
+}
+
 .markdown-body > *:first-child {
   margin-top: 0;
 }

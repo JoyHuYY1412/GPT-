@@ -208,9 +208,37 @@ def extract_affiliations(arxiv_id: str) -> list[str]:
         lowered = clean.lower()
         if not clean or "email" in lowered or "author" in lowered:
             return
-        if any(noise in lowered for noise in ["fairmeta", "rgb", "colback", "colframe", "tblgroup", "ignore it", "metadata"]):
+        noise_terms = [
+            "fairmeta",
+            "rgb",
+            "colback",
+            "colframe",
+            "tblgroup",
+            "ignore it",
+            "metadata",
+            "hyper-parameter",
+            "hyperparameter",
+            "success rate",
+            "grouped by",
+            "tcolorbox",
+            "promptbox",
+            "caption",
+            "figure",
+            "table",
+            "scores",
+            "university press",
+            "press,",
+            "causality:",
+            "input:",
+            "output:",
+            "should ",
+            "code:",
+        ]
+        if any(noise in lowered for noise in noise_terms):
             return
         if len(clean) > 220:
+            return
+        if clean.endswith(":") or clean.count(".") > 3:
             return
         if len(clean) < 3 or clean in affiliations:
             return

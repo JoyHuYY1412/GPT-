@@ -305,6 +305,19 @@ python agent_daily.py --fallback --notify
 - 作者早期方向、代表性 title、近期 focus。
 - 不允许用 `Recent work on ...`、`Research direction` 等占位条目冒充论文；未核验到的列表留空，让前端显示“月度 Agent 补齐”。
 
+## 论文考古 Agent 要求
+
+论文考古不是普通的“经典论文推荐”。它要优先挖出一个数学对象或理论工具，再解释这个工具如何从原始领域迁移到今天的新问题里。
+
+每条 `kind="archaeology"` 的输出必须额外补齐：
+
+- `payload.theory_object`：数学对象或理论工具，比如零空间投影、最优传输、图割、变分推断、信息瓶颈、POMDP、能量函数。
+- `payload.origin_context`：这个工具最初/经典地服务于什么问题，比如 class-incremental learning、图像分割、概率机器人、控制、因果推断。
+- `payload.migration_paths`：至少 3 条迁移路径，写成“领域：这个工具如何改变问题表述”。
+- `payload.modern_question`：今天能启发的新问题定义。
+
+范例思路：AlphaEdit 把 class-incremental learning 中的 null-space editing 思想迁移到 LLM knowledge editing。讲解时应先讲“零空间投影如何保护旧知识”，再讲持续学习、machine unlearning、knowledge editing 里如何复用这一问题表述。
+
 ## Agent 输出 JSON 约定
 
 `agent_daily.py` 接收如下结构：
@@ -336,7 +349,11 @@ python agent_daily.py --fallback --notify
         "original_abstract": "English abstract",
         "zh_abstract": "忠实中文摘要",
         "contributions": ["**贡献一**：具体解释。"],
-        "framework": ["**模块一**：具体解释。"]
+        "framework": ["**模块一**：具体解释。"],
+        "theory_object": "仅 archaeology 必填：数学对象/理论工具",
+        "origin_context": "仅 archaeology 必填：经典论文/原始问题语境",
+        "migration_paths": ["持续学习：迁移方式", "机器遗忘：迁移方式", "知识编辑：迁移方式"],
+        "modern_question": "仅 archaeology 必填：今天可以提出的新问题定义"
       }
     }
   ]

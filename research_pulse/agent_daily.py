@@ -24,10 +24,22 @@ PAPER_KINDS = {"arxiv", "recent", "archaeology", "science"}
 MODULE_REQUIREMENTS = {
     "arxiv": "真实 arXiv 新论文，必须有 arXiv Page/PDF 链接、英文摘要、忠实中文摘要、0-10 相关度。",
     "recent": "近两年高影响力 paper，必须标明 venue/company/project/GitHub 等影响力来源，并给 paper/pdf/project/code 链接之一。",
-    "archaeology": "论文考古，必须说明经典理论/早年好论文、为什么今天仍值得读、后续高影响工作。",
+    "archaeology": "论文考古，必须从经典理论/早年好论文里挖数学对象、问题重写方式和跨领域迁移链，而不是泛泛推荐旧论文。",
     "science": "AI for Science / AI for 民生，必须来自 Nature/Science/Cell/大字刊或明确高影响来源，并写清楚科学问题与 AI 结合方式。",
     "scholar": "学术人物关系网，必须有 profile/homepage/source 链接，写清 title、机构、师承/学生/合作关系和待核验来源。",
 }
+
+ARCHAEOLOGY_REQUIREMENTS = """## 论文考古专项要求
+- 考古卡片的核心不是“这篇老论文很经典”，而是发现一个可迁移的数学/理论工具，并讲清它如何穿越领域。
+- 每张 archaeology 卡必须显式写清：
+  1. theory_object：数学对象或理论工具，例如零空间投影、拉格朗日对偶、最优传输、谱分解、能量函数、贝叶斯滤波、图割、变分推断、信息瓶颈、控制可达性。
+  2. origin_context：它最早/经典地服务于什么问题，例如 class-incremental learning、图像分割、控制、因果推断、压缩编码、概率机器人。
+  3. migration_paths：至少 3 条迁移路径，格式为“领域：这个数学工具如何改变问题表述”。迁移路径要尽量覆盖可核验的现代方向，例如 continual learning、machine unlearning、knowledge editing、diffusion/world model、VLA/robotics、AI for Science。
+  4. modern_question：它今天能启发的新问题定义，例如“能不能把参数编辑限制在旧知识零空间里，从而编辑新知识但不破坏旧知识？”
+- 优先寻找有“旧理论 -> 新论文”的明确连接：例如 AlphaEdit 借鉴 class-incremental learning 中的 null-space editing，把零空间约束迁移到 LLM knowledge editing；这类线索比单纯引用量更重要。
+- 讲法必须先讲数学对象，再讲原始领域，再讲迁移领域：不要从新论文八卦开始，也不要只写“有启发”。
+- contributions/framework/why/thinking 必须能让读者看懂：这个工具是什么、为什么当年有效、今天在哪些问题里以不同名字复活、我们可以怎样借它提出新课题。
+- tags 用中文主题词为主，例如“零空间投影”“持续学习”“机器遗忘”“知识编辑”“参数子空间”；缩写如 VLA、ODE、POMDP 可以保留。"""
 
 
 def today() -> str:
@@ -111,6 +123,16 @@ def quality_issues(raw: dict) -> list[str]:
             issues.append("missing contributions")
         if not isinstance(framework, list) or len([x for x in framework if str(x).strip()]) < 2:
             issues.append("missing framework")
+    if kind == "archaeology":
+        migration_paths = payload.get("migration_paths")
+        if not str(payload.get("theory_object") or "").strip():
+            issues.append("missing archaeology theory_object")
+        if not str(payload.get("origin_context") or "").strip():
+            issues.append("missing archaeology origin_context")
+        if not isinstance(migration_paths, list) or len([x for x in migration_paths if str(x).strip()]) < 3:
+            issues.append("missing archaeology migration_paths")
+        if not str(payload.get("modern_question") or "").strip():
+            issues.append("missing archaeology modern_question")
     if not clean_tags(raw):
         issues.append("missing useful tags")
     return issues
@@ -134,6 +156,8 @@ def daily_agent_prompt(date: str | None = None) -> str:
 ## 模块要求
 {requirements}
 
+{ARCHAEOLOGY_REQUIREMENTS}
+
 ## 去重要求
 - 优先用 paper/pdf/project/code/profile/homepage/doi 链接去重。
 - 没有链接的条目不要导入。
@@ -148,6 +172,7 @@ def daily_agent_prompt(date: str | None = None) -> str:
 - contributions 至少 3 条，每条先用加粗短语概括，再解释具体做了什么。
 - framework 至少 3 条，写清数据流、模块、训练目标或推理流程。
 - why 必须具体说明为什么值得读，包括方法启发、数据/评估假设、可能迁移方向。
+- archaeology 条目的 why/thinking 必须体现“数学对象 -> 原始语境 -> 迁移语境 -> 新问题定义”的链条。
 - 不确定的信息标注“待核验”，不要虚构引用量、单位、title 或师承关系。
 
 ## 输出 JSON
@@ -179,6 +204,10 @@ def daily_agent_prompt(date: str | None = None) -> str:
         "zh_abstract": "忠实中文摘要",
         "contributions": ["**贡献一**：具体解释。"],
         "framework": ["**模块一**：具体解释。"],
+        "theory_object": "仅 archaeology 必填：数学对象/理论工具",
+        "origin_context": "仅 archaeology 必填：经典论文/原始问题语境",
+        "migration_paths": ["持续学习：迁移方式", "机器遗忘：迁移方式", "知识编辑：迁移方式"],
+        "modern_question": "仅 archaeology 必填：今天可以提出的新问题定义",
         "source_badges": ["ICML", "Google DeepMind"]
       }}
     }}

@@ -16,9 +16,12 @@ import html
 import re
 import urllib.parse
 import urllib.request
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+# defusedxml protects against XML entity expansion (billion laughs)
+# and external entity (XXE) attacks when parsing arXiv API responses.
 
 ROOT = Path(__file__).resolve().parents[1]
 TZ = ZoneInfo("Asia/Taipei")
